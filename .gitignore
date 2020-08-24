@@ -1,0 +1,9 @@
+# Config file
+config.json
+
+# Build files
+/target
+
+# IDEA specific
+*.iml
+/.idea
