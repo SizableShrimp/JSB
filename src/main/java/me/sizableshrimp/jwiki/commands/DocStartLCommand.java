@@ -1,6 +1,7 @@
 package me.sizableshrimp.jwiki.commands;
 
 import me.sizableshrimp.jwiki.args.Args;
+import me.sizableshrimp.jwiki.data.Help;
 import org.fastily.jwiki.core.Wiki;
 
 import java.util.List;
@@ -18,8 +19,8 @@ public class DocStartLCommand extends Command {
     }
 
     @Override
-    public String getHelp() {
-        return "Adds {{L}} to all locations where {{Doc/Start}} is used and the page is marked for translation.";
+    public Help getHelp() {
+        return new Help(this, "Adds {{L}} to all locations where {{Doc/Start}} is used and the page is marked for translation.");
     }
 
     @Override

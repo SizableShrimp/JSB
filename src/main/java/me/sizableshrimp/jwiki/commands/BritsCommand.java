@@ -1,6 +1,7 @@
 package me.sizableshrimp.jwiki.commands;
 
 import me.sizableshrimp.jwiki.args.Args;
+import me.sizableshrimp.jwiki.data.Help;
 import me.sizableshrimp.jwiki.data.Language;
 import org.fastily.jwiki.core.Wiki;
 
@@ -19,8 +20,8 @@ public class BritsCommand extends Command {
     }
 
     @Override
-    public String getHelp() {
-        return "Fix those stinky Brits in the Module namespace";
+    public Help getHelp() {
+        return new Help(this, "Fix those stinky Brits in the Module namespace");
     }
 
     @Override

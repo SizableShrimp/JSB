@@ -1,10 +1,9 @@
 package me.sizableshrimp.jwiki;
 
-import com.google.gson.JsonElement;
 import me.sizableshrimp.jwiki.args.Args;
 import me.sizableshrimp.jwiki.args.ArgsProcessor;
 import me.sizableshrimp.jwiki.commands.Command;
-import me.sizableshrimp.jwiki.data.Language;
+import me.sizableshrimp.jwiki.data.Help;
 import okhttp3.HttpUrl;
 import org.fastily.jwiki.core.Wiki;
 import org.reflections.Reflections;
@@ -28,7 +27,7 @@ public class Main {
     private static Set<Constructor<Command>> constructors;
 
     // Examples - https://github.com/fastily/jwiki/wiki/Examples
-    public static void main(String[] a) throws IOException {
+    public static void main(String[] a) {
         if (WIKI == null || WIKI.whoami() == null) {
             System.out.println("Failed to login to MediaWiki");
             return;
@@ -39,8 +38,8 @@ public class Main {
         //System.out.println(WikiUtil.parse(WIKI, null, "[https://google.com oof], stuff here more stuff [https://github.com git]."));
 
         //System.out.println(WIKI.basicGET("query", "prop", "info", "titles", "UserProfile:SizableShrimp").body().string());
-        runConsole("fixdocstart");
         //runConsole("reportaddedby");
+        runConsole();
     }
 
     /**
@@ -60,14 +59,17 @@ public class Main {
         if (constructors == null) {
             loadConstructors();
         }
-        if (arr == null) {
+        if (arr == null || arr.length == 0) {
             // Manual Mode
             while (true) {
                 loadCommands(); // Reload instances each time for use in breakpoints
                 System.out.print("Enter command: ");
                 Args args = ArgsProcessor.input();
                 if ("help".equals(args.getName())) {
-                    COMMANDS.values().forEach(cmd -> System.out.printf("%s - %s%n", cmd.getName(), cmd.getHelp()));
+                    for (Command cmd : COMMANDS.values()) {
+                        Help help = cmd.getHelp();
+                        System.out.println(help.getName() + " - " + help.getDesc());
+                    }
                     continue;
                 }
                 executeCmd(args);

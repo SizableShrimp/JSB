@@ -1,6 +1,7 @@
 package me.sizableshrimp.jwiki.commands;
 
 import me.sizableshrimp.jwiki.args.Args;
+import me.sizableshrimp.jwiki.data.Help;
 import org.fastily.jwiki.core.Wiki;
 
 public class ExitCommand extends Command {
@@ -14,8 +15,8 @@ public class ExitCommand extends Command {
     }
 
     @Override
-    public String getHelp() {
-        return "Exit the program";
+    public Help getHelp() {
+        return new Help(this, "Exit the program");
     }
 
     @Override

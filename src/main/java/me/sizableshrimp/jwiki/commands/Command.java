@@ -4,7 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import me.sizableshrimp.jwiki.args.Args;
+import me.sizableshrimp.jwiki.data.Help;
 import org.fastily.jwiki.core.Wiki;
+
+import java.util.List;
 
 @AllArgsConstructor
 public abstract class Command {
@@ -14,7 +17,11 @@ public abstract class Command {
 
     public abstract String getName();
 
-    public abstract String getHelp();
+    public List<String> getAliases() {
+        return List.of();
+    }
+
+    public abstract Help getHelp();
 
     public abstract void run(Args args);
 }

@@ -1,6 +1,7 @@
 package me.sizableshrimp.jwiki.commands;
 
 import me.sizableshrimp.jwiki.args.Args;
+import me.sizableshrimp.jwiki.data.Help;
 import org.fastily.jwiki.core.NS;
 import org.fastily.jwiki.core.Wiki;
 import org.fastily.jwiki.util.FL;
@@ -18,8 +19,8 @@ public class TilesheetMoveCommand extends Command {
     }
 
     @Override
-    public String getHelp() {
-        return "Move tilesheets to support z axis that have not yet been moved";
+    public Help getHelp() {
+        return new Help(this, "Move tilesheets to support z axis that have not yet been moved");
     }
 
     @Override

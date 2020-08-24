@@ -1,6 +1,7 @@
 package me.sizableshrimp.jwiki.commands;
 
 import me.sizableshrimp.jwiki.args.Args;
+import me.sizableshrimp.jwiki.data.Help;
 import me.sizableshrimp.jwiki.data.Language;
 import org.fastily.jwiki.core.Wiki;
 
@@ -17,8 +18,8 @@ public class DisListCommand extends Command {
     }
 
     @Override
-    public String getHelp() {
-        return "Generate a list of disambiguations and their updated link, stored in dislist.txt";
+    public Help getHelp() {
+        return new Help(this, "Generate a list of disambiguations and their updated link, stored in dislist.txt");
     }
 
     @Override

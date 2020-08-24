@@ -1,6 +1,7 @@
 package me.sizableshrimp.jwiki.commands;
 
 import me.sizableshrimp.jwiki.args.Args;
+import me.sizableshrimp.jwiki.data.Help;
 import org.fastily.jwiki.core.NS;
 import org.fastily.jwiki.core.Wiki;
 import org.fastily.jwiki.util.FL;
@@ -18,8 +19,8 @@ public class TestMoveCommand extends Command {
     }
 
     @Override
-    public String getHelp() {
-        return "Test a move";
+    public Help getHelp() {
+        return new Help(this, "Test a move");
     }
 
     @Override
