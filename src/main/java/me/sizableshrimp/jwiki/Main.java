@@ -3,28 +3,19 @@ package me.sizableshrimp.jwiki;
 import me.sizableshrimp.jwiki.args.Args;
 import me.sizableshrimp.jwiki.args.ArgsProcessor;
 import me.sizableshrimp.jwiki.commands.Command;
-import me.sizableshrimp.jwiki.data.Help;
+import me.sizableshrimp.jwiki.commands.manager.CommandManager;
 import okhttp3.HttpUrl;
 import org.fastily.jwiki.core.Wiki;
-import org.reflections.Reflections;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Scanner;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 public class Main {
     public static final Scanner SCANNER = new Scanner(System.in);
-    private static final Map<String, Command> COMMANDS = new TreeMap<>();
     private static final Wiki WIKI = setup(Path.of("config.json"), false);
-    private static final Reflections REFLECTIONS = new Reflections(Command.class.getPackage().getName());
-    private static Set<Constructor<Command>> constructors;
+    public static final CommandManager COMMAND_MANAGER = new CommandManager(WIKI);
 
     // Examples - https://github.com/fastily/jwiki/wiki/Examples
     public static void main(String[] a) {
@@ -56,34 +47,24 @@ public class Main {
      * @param arr Used for automatic mode and parsing commands, determines what mode the method runs in.
      */
     private static void runConsole(boolean infinite, String... arr) {
-        if (constructors == null) {
-            loadConstructors();
-        }
         if (arr == null || arr.length == 0) {
             // Manual Mode
             while (true) {
-                loadCommands(); // Reload instances each time for use in breakpoints
+                COMMAND_MANAGER.loadCommands(); // Reload instances each time for use in breakpoints
                 System.out.print("Enter command: ");
                 Args args = ArgsProcessor.input();
-                if ("help".equals(args.getName())) {
-                    for (Command cmd : COMMANDS.values()) {
-                        Help help = cmd.getHelp();
-                        System.out.println(help.getName() + " - " + help.getDesc());
-                    }
-                    continue;
-                }
-                executeCmd(args);
+                COMMAND_MANAGER.executeCmd(args);
             }
         } else {
             // Automatic Mode
             boolean again = infinite;
             do {
-                loadCommands(); // Reload instances each time for use in breakpoints
+                COMMAND_MANAGER.loadCommands(); // Reload instances each time for use in breakpoints
                 Arrays.stream(arr)
                         .map(ArgsProcessor::process)
                         .forEach(args -> {
                             System.out.println("Running command \"" + args.getName() + "\"");
-                            executeCmd(args);
+                            COMMAND_MANAGER.executeCmd(args);
                         });
                 if (infinite)
                     continue;
@@ -91,6 +72,13 @@ public class Main {
                 again = "y".equalsIgnoreCase(SCANNER.nextLine());
             } while (again);
         }
+    }
+
+    /**
+     * Defaults to manual mode.
+     */
+    private static void runConsole(String... arr) {
+        runConsole(false, arr);
     }
 
     /**
@@ -129,38 +117,5 @@ public class Main {
                 .withUserAgent(config.getUserAgent())
                 .withDefaultLogger(defaultLogger)
                 .build();
-    }
-
-    /**
-     * Defaults to manual mode.
-     */
-    private static void runConsole(String... arr) {
-        runConsole(false, arr);
-    }
-
-    private static void executeCmd(Args args) {
-        Command command = COMMANDS.get(args.getName());
-        if (command != null)
-            command.run(args);
-    }
-
-    private static void loadCommands() {
-        constructors.stream()
-                .map(constructor -> {
-                    try {
-                        return constructor.newInstance(WIKI);
-                    } catch (Exception e) {
-                        return null;
-                    }
-                }).filter(Objects::nonNull)
-                .forEach(cmd -> COMMANDS.put(cmd.getName(), cmd));
-    }
-
-    private static void loadConstructors() {
-        constructors = REFLECTIONS.getSubTypesOf(Command.class).stream()
-                .map(clazz -> (Constructor<Command>[]) clazz.getConstructors())
-                .filter(arr -> arr.length != 0)
-                .map(arr -> arr[0])
-                .collect(Collectors.toSet());
     }
 }
