@@ -30,10 +30,30 @@ public class CommandManager {
         this.constructors = loadConstructors();
     }
 
+    @SuppressWarnings("unchecked")
+    private Set<Constructor<Command>> loadConstructors() {
+        return REFLECTIONS.getSubTypesOf(Command.class).stream()
+                .filter(clazz -> !clazz.isAnnotationPresent(DisabledCommand.class))
+                .map(clazz -> {
+                    try {
+                        return (Constructor<Command>) clazz.getConstructor(Wiki.class);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                }).filter(Objects::nonNull)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
     public void executeCmd(Args args) {
         Command command = commandMap.get(args.getName());
-        if (command != null)
+        if (command == null)
+            return;
+
+        try {
             command.run(args);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void loadCommands() {
@@ -52,19 +72,5 @@ public class CommandManager {
             commandMap.put(command.getName(), command);
             command.getAliases().forEach(alias -> commandMap.put(alias, command));
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private Set<Constructor<Command>> loadConstructors() {
-        return REFLECTIONS.getSubTypesOf(Command.class).stream()
-                .filter(clazz -> !clazz.isAnnotationPresent(DisabledCommand.class))
-                .map(clazz -> {
-                    try {
-                        return (Constructor<Command>) clazz.getConstructor(Wiki.class);
-                    } catch (Exception e) {
-                        return null;
-                    }
-                }).filter(Objects::nonNull)
-                .collect(Collectors.toUnmodifiableSet());
     }
 }

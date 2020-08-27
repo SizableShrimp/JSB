@@ -22,9 +22,18 @@ public class ArgsProcessor {
         StringBuilder current = new StringBuilder();
 
         boolean quote = false;
-        for (char c : line.toCharArray()) {
-            if (c == '"') {
+        boolean escaped = false;
+        char[] chars = line.toCharArray();
+        for (char c : chars) {
+            boolean temp = false;
+            if (c == '"' && !escaped) {
                 quote = !quote;
+            } else if (c == '\\') {
+                if (escaped) {
+                    current.append(c);
+                } else {
+                    temp = true;
+                }
             } else if (c != ' ' || quote) {
                 // Append if not a space or still append space if inside a quote
                 current.append(c);
@@ -33,6 +42,8 @@ public class ArgsProcessor {
                     list.add(current.toString());
                 current = new StringBuilder();
             }
+
+            escaped = temp;
         }
         if (current.length() != 0)
             list.add(current.toString()); // Add last arg

@@ -28,11 +28,11 @@ public class TestMoveCommand extends Command {
         if (args.getArgs().length != 2) {
             System.out.println("Invalid Usage: testmove \"Namespace:Page/Test One\" Namespace:Page/Two");
         }
-//        ArrayList<String> redirects = wiki.allPages("Tilesheet", true, false, -1, NS.FILE);
-//        wiki.prefixIndex(NS.FILE, "Tilesheet").stream()
-//                .filter(title -> !title.endsWith(" 0.png"))
-//                .filter(title -> !redirects.contains(title))
-//                .filter(title -> title.matches("File:Tilesheet [\\w\\d-]+ \\d+\\.png"))
-//                .forEach(title -> wiki.basicPOST("move", FL.pMap("")));
+        //ArrayList<String> redirects = wiki.allPages("Tilesheet", true, false, -1, NS.FILE);
+        //wiki.prefixIndex(NS.FILE, "Tilesheet").stream()
+        //        .filter(title -> !title.endsWith(" 0.png"))
+        //        .filter(title -> !redirects.contains(title))
+        //        .filter(title -> title.matches("File:Tilesheet [\\w\\d-]+ \\d+\\.png"))
+        //        .forEach(title -> wiki.basicPOST("move", FL.pMap("")));
     }
 }

@@ -19,8 +19,21 @@ public class Language {
     String localized;
     String english;
 
-    public boolean hasEnglishTranslation() {
-        return !localized.equals(english);
+    /**
+     * Get a {@link Language} by a title with a subpage as a language code (ex. "GregTech/de").
+     * Returns null if there is no subpage or the subpage is not a language code.
+     *
+     * @param wiki A {@link Wiki} object to use for requesting the data.
+     * @param title A title with the subpage being a language code, ex. "Template:Navbox GregTech 6/de".
+     * @return A {@link Language} object.
+     * @see Language#getByCode(Wiki, String)
+     */
+    public static Language getByTitle(Wiki wiki, String title) {
+        int index = title.lastIndexOf('/');
+        if (index == -1 || title.length() == index + 1)
+            return null;
+
+        return getByCode(wiki, title.substring(index + 1));
     }
 
     /**
@@ -40,23 +53,6 @@ public class Language {
         return new Language(code, localized, english);
     }
 
-    /**
-     * Get a {@link Language} by a title with a subpage as a language code (ex. "GregTech/de").
-     * Returns null if there is no subpage or the subpage is not a language code.
-     *
-     * @param wiki A {@link Wiki} object to use for requesting the data.
-     * @param title A title with the subpage being a language code, ex. "Template:Navbox GregTech 6/de".
-     * @return A {@link Language} object.
-     * @see Language#getByCode(Wiki, String)
-     */
-    public static Language getByTitle(Wiki wiki, String title) {
-        int index = title.lastIndexOf('/');
-        if (index == -1 || title.length() == index + 1)
-            return null;
-
-        return getByCode(wiki, title.substring(index + 1));
-    }
-
     private static String getLanguageInfo(Wiki wiki, String data) {
         JsonObject parse = WikiUtil.parse(wiki, null, "{{#language:" + data + "}}").getAsJsonObject().getAsJsonObject("parse");
         //System.out.println(parse);
@@ -67,7 +63,11 @@ public class Language {
             return null;
 
         String output = text.get("*").getAsString();
-        // Data is normal wrapped like so "<p>data\n<\p>"
+        // Data is normally wrapped like so "<p>data\n<\p>"
         return output.substring(3, output.length() - 5);
+    }
+
+    public boolean hasEnglishTranslation() {
+        return !localized.equals(english) && english != null && !english.isEmpty();
     }
 }

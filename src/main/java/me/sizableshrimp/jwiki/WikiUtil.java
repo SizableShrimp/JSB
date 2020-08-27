@@ -20,8 +20,9 @@ public class WikiUtil {
     //                "noredirect", Boolean.toString(!leaveRedirect)));
     //    }
 
-    public static JsonElement parse(Wiki wiki, String title, String parse) {
-        return jsonFromResponse(wiki.basicGET("parse", "wrapoutputclass", "", "disablelimitreport", "true", "title", title == null ? "Test" : title, "text", parse));
+    public static JsonElement parse(Wiki wiki, String contentmodel, String parse) {
+        String cm = contentmodel == null ? "wikitext" : contentmodel;
+        return jsonFromResponse(wiki.basicGET("parse", "wrapoutputclass", "", "disablelimitreport", "true", "contentmodel", cm, "text", parse));
     }
 
     /**
@@ -48,8 +49,8 @@ public class WikiUtil {
     }
 
     public static JsonObject useModule(Wiki wiki, String module, String function, String... args) {
-        String data = "local p = {} function p.run(args) local module = require([[Module:]]..args[1]) if args[2] == nil then return mw.text.jsonEncode(module) else local value = module[args[2]] if " +
-                "type(value) == 'function' then return value(unpack(args, 3)) else if type(value) == 'table' then return mw.text.jsonEncode(value) else return value";
+        //String data = "local p = {} function p.run(args) local module = require([[Module:]]..args[1]) if args[2] == nil then return mw.text.jsonEncode(module) else local value = module[args[2]] if " +
+        //        "type(value) == 'function' then return value(unpack(args, 3)) else if type(value) == 'table' then return mw.text.jsonEncode(value) else return value";
         function = function == null ? "" : "|" + function;
         String argsCombined = args == null || args.length == 0 || function.isEmpty()
                 ? ""
