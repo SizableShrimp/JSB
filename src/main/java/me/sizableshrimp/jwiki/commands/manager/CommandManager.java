@@ -45,6 +45,8 @@ public class CommandManager {
     }
 
     public void executeCmd(Args args) {
+        if (args == null)
+            return;
         Command command = commandMap.get(args.getName());
         if (command == null)
             return;

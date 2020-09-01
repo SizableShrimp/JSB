@@ -7,9 +7,11 @@ import lombok.NonNull;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.fastily.jwiki.core.Wiki;
+import org.fastily.jwiki.util.FL;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.Map;
 
 public class WikiUtil {
     private WikiUtil() {}
@@ -30,7 +32,7 @@ public class WikiUtil {
      * Returns an empty {@link JsonObject} if the response is null, body is null, or {@link ResponseBody#string()} throws an exception.
      *
      * @param response A {@link Response} from a wiki API call.
-     * @return A {@link JsonElement} parsed from a {@link ResponseBody}, or an empty {@link JsonObject} on error.
+     * @return A {@link JsonElement} parsed from a {@link ResponseBody}, or an empty {@link JsonObject} on invalid {@link Response}.
      */
     @NonNull
     public static JsonElement jsonFromResponse(@Nullable Response response) {
@@ -48,29 +50,34 @@ public class WikiUtil {
         return new JsonObject();
     }
 
-    public static JsonObject useModule(Wiki wiki, String module, String function, String... args) {
-        //String data = "local p = {} function p.run(args) local module = require([[Module:]]..args[1]) if args[2] == nil then return mw.text.jsonEncode(module) else local value = module[args[2]] if " +
-        //        "type(value) == 'function' then return value(unpack(args, 3)) else if type(value) == 'table' then return mw.text.jsonEncode(value) else return value";
-        function = function == null ? "" : "|" + function;
-        String argsCombined = args == null || args.length == 0 || function.isEmpty()
-                ? ""
-                : "|" + String.join("|", args);
-        String text = String.format("{{:User:SizableShrimp/Workaround|%s%s%s}}", module, function, argsCombined)
-                .replace("|", "{{!}}")
-                .replace("=", "{{=}}");
-        Response response = wiki.basicGET("expandtemplates", "prop", "wikitext", "text", text);
+    /**
+     * Resolve multiple redirects, accounting for double redirects, etc.
+     *
+     * @param wiki
+     * @param title
+     * @return
+     */
+    public static String resolveRedirects(Wiki wiki, String title) {
+        String prev;
+        String current = title;
+        do {
+            prev = current;
+            current = wiki.resolveRedirect(prev);
+        } while (!current.equals(prev));
 
-        if (response != null) {
-            try {
-                ResponseBody body = response.body();
-                if (body == null)
-                    return null;
-                return JsonParser.parseString(body.string()).getAsJsonObject().getAsJsonObject("expandtemplates");
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-        return null;
+        return current;
+    }
+
+    public static AReply move(Wiki wiki, String from, String to, String reason, boolean moveTalk, boolean moveSubPages, boolean noRedirect) {
+        Map<String, String> formData = FL.pMap("from", from, "to", to, "token", wiki.getConfig().getToken(), "watchlist", "nochange");
+        if (reason != null)
+            formData.put("reason", reason);
+        if (moveTalk)
+            formData.put("movetalk", "true");
+        if (moveSubPages)
+            formData.put("movesubpages", "true");
+        if (noRedirect)
+            formData.put("noredirect", "true");
+        return AReply.processAction(wiki, "move", formData);
     }
 }

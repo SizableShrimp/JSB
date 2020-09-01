@@ -18,6 +18,9 @@ public class ArgsProcessor {
     }
 
     public static Args process(String line) {
+        if (line == null || line.isBlank())
+            return null;
+
         List<String> list = new ArrayList<>();
         StringBuilder current = new StringBuilder();
 

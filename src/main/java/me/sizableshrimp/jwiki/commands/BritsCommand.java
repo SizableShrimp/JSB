@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@DisabledCommand
 public class BritsCommand extends Command {
     public BritsCommand(Wiki wiki) {
         super(wiki);

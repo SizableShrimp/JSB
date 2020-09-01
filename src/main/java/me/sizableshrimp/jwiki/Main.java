@@ -30,6 +30,7 @@ public class Main {
         //System.out.println(WikiUtil.parse(WIKI, null, "[https://google.com oof], stuff here more stuff [https://github.com git]."));
         //System.out.println(WIKI.basicGET("query", "prop", "info", "titles", "UserProfile:SizableShrimp").body().string());
 
+        //System.out.println(WIKI.getCategoryMembers("Category:Pages with a missing tile name").size());
         runConsole();
     }
 

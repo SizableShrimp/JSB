@@ -47,6 +47,8 @@ public class Mod {
     public static Mod getMod(Wiki wiki, String modInfo) {
         if (data == null)
             loadMods(wiki);
+        if (!data.containsKey(modInfo.toLowerCase()))
+            return null;
 
         JsonObject json = data.get(modInfo.toLowerCase()).getAsJsonObject(); // Case insensitive
         if (json == null)

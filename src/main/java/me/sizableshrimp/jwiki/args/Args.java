@@ -6,4 +6,14 @@ import lombok.Value;
 public class Args {
     String name;
     String[] args;
+
+    public String getArg(int index) {
+        if (index < 0 || index >= getArgsLength())
+            return null;
+        return args[index];
+    }
+
+    public int getArgsLength() {
+        return args.length;
+    }
 }

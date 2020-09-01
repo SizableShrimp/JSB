@@ -23,5 +23,5 @@ public abstract class Command {
 
     public abstract Help getHelp();
 
-    public abstract void run(Args args);
+    public abstract void run(Args args) throws Exception;
 }

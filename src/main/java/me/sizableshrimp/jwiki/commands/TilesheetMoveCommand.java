@@ -25,12 +25,12 @@ public class TilesheetMoveCommand extends Command {
 
     @Override
     public void run(Args args) {
-        //ArrayList<String> redirects = wiki.allPages("Tilesheet", true, false, -1, NS.FILE);
-        //wiki.prefixIndex(NS.FILE, "Tilesheet").stream()
-        //        .filter(title -> !title.endsWith(" 0.png"))
-        //        .filter(title -> !redirects.contains(title))
-        //        .filter(title -> title.matches("File:Tilesheet [\\w\\d-]+ \\d+\\.png"))
-        //        .forEach(title -> wiki.basicPOST("move", FL.pMap("")));
-        //TODO fix, add arguments
+        ArrayList<String> redirects = wiki.allPages("Tilesheet", true, false, -1, NS.FILE);
+        wiki.prefixIndex(NS.FILE, "Tilesheet").stream()
+                .filter(title -> !title.endsWith(" 0.png"))
+                .filter(title -> !redirects.contains(title))
+                .filter(title -> title.matches("File:Tilesheet [\\w\\d-]+ \\d+\\.png"))
+                .forEach(title -> wiki.basicPOST("move", FL.pMap("from", title, "to", title.replace(".png", " 0.png"),
+                        "reason", "Move tilesheet to support z axis", "movetalk", "true")));
     }
 }
