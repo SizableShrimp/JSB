@@ -2,6 +2,7 @@ package me.sizableshrimp.jwiki.commands;
 
 import me.sizableshrimp.jwiki.args.Args;
 import me.sizableshrimp.jwiki.data.Help;
+import me.sizableshrimp.jwiki.data.Language;
 import org.fastily.jwiki.core.Wiki;
 
 import java.util.ArrayList;

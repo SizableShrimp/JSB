@@ -17,9 +17,9 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class CommandManager {
-    private static final Reflections REFLECTIONS = new Reflections(Command.class.getPackage().getName());
-    private final Wiki wiki;
-    private final Set<Constructor<Command>> constructors;
+    protected static final Reflections REFLECTIONS = new Reflections(Command.class.getPackage().getName());
+    protected final Wiki wiki;
+    protected final Set<Constructor<Command>> constructors;
     @Getter
     private final Map<String, Command> commandMap = new HashMap<>();
     @Getter
@@ -31,7 +31,7 @@ public class CommandManager {
     }
 
     @SuppressWarnings("unchecked")
-    private Set<Constructor<Command>> loadConstructors() {
+    protected Set<Constructor<Command>> loadConstructors() {
         return REFLECTIONS.getSubTypesOf(Command.class).stream()
                 .filter(clazz -> !clazz.isAnnotationPresent(DisabledCommand.class))
                 .map(clazz -> {

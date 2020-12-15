@@ -1,5 +1,7 @@
 package me.sizableshrimp.jwiki.args;
 
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.Value;
 
 @Value

@@ -7,6 +7,7 @@ import me.sizableshrimp.jwiki.args.Args;
 import me.sizableshrimp.jwiki.data.Help;
 import org.fastily.jwiki.core.Wiki;
 
+import java.io.IOException;
 import java.util.List;
 
 @AllArgsConstructor

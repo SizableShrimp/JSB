@@ -29,7 +29,19 @@ public class Scribunto {
         this(null, null, null);
     }
 
+    /**
+     * Runs the given module and returns back the result that has been JSON-encoded using {@code mw.text.jsonEncode}.
+     * If {@code code} is set to null, it defaults to "p", or "package."
+     *
+     * @param wiki A {@link Wiki} object to use for requesting the data.
+     * @param module The name of a module on the wiki, with or without the "Module:" prefix, e.g. "Language" or "Module:Language".
+     * @param code The code to parse from the module, or "p" if null. Some examples are "p" or "p.functionName(parameters)"
+     * @return A {@link Scribunto} response object containing the response JSON, what was printed to the Scribunto console with {@code mw.log}, and the returned JSON-encoded string.
+     * This returns a blank object if the module does not exist or the response is not in the form of a JSON object.
+     */
     public static Scribunto runScribuntoCode(Wiki wiki, String module, String code) {
+        if (code == null)
+            code = "p";
         module = prefixModule(module);
         if (!wiki.exists(module))
             return new Scribunto();
@@ -49,6 +61,13 @@ public class Scribunto {
         return ret;
     }
 
+    /**
+     * Parses and returns the JSON-encoded string provided by the Scribunto console output,.
+     * If the Scribunto console did not return a proper response, this function prints a message to stderr and returns null.
+     *
+     * @return The JSON from the Scribunto console, or null on error.
+     * @see Scribunto#runScribuntoCode(Wiki, String, String)
+     */
     public JsonElement getReturnJson() {
         if (this.responseJson.getAsJsonPrimitive("type").getAsString().equals("normal")) {
             return JsonParser.parseString(this.responseJson.getAsJsonPrimitive("return").getAsString());

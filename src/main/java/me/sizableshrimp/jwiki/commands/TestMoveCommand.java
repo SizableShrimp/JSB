@@ -2,7 +2,11 @@ package me.sizableshrimp.jwiki.commands;
 
 import me.sizableshrimp.jwiki.args.Args;
 import me.sizableshrimp.jwiki.data.Help;
+import org.fastily.jwiki.core.NS;
 import org.fastily.jwiki.core.Wiki;
+import org.fastily.jwiki.util.FL;
+
+import java.util.ArrayList;
 
 @DisabledCommand
 public class TestMoveCommand extends Command {

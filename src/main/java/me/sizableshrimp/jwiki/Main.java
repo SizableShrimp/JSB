@@ -5,21 +5,25 @@ import me.sizableshrimp.jwiki.args.ArgsProcessor;
 import me.sizableshrimp.jwiki.commands.Command;
 import me.sizableshrimp.jwiki.commands.manager.CommandManager;
 import okhttp3.HttpUrl;
+import org.fastily.jwiki.core.WQuery;
 import org.fastily.jwiki.core.Wiki;
+import org.fastily.jwiki.util.FL;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
+    private static final WQuery.QTemplate SITEINFO = new WQuery.QTemplate(FL.pMap("action", "query", "meta", "siteinfo", "siprop", "general"), "query");
     public static final Scanner SCANNER = new Scanner(System.in);
     public static final Config CONFIG = createConfig(Path.of("config.json"));
     private static final Wiki WIKI = setup(CONFIG, false);
     public static final CommandManager COMMAND_MANAGER = new CommandManager(WIKI);
 
     // Examples - https://github.com/fastily/jwiki/wiki/Examples
-    public static void main(String[] a)  {
+    public static void main(String[] args) throws MalformedURLException, InterruptedException {
         if (WIKI == null || WIKI.whoami() == null) {
             System.out.println("Failed to login to MediaWiki");
             return;
@@ -30,7 +34,15 @@ public class Main {
         //System.out.println(WikiUtil.parse(WIKI, null, "[https://google.com oof], stuff here more stuff [https://github.com git]."));
         //System.out.println(WIKI.basicGET("query", "prop", "info", "titles", "UserProfile:SizableShrimp").body().string());
 
-        //System.out.println(WIKI.getCategoryMembers("Category:Pages with a missing tile name").size());
+        //List<String> titles = WIKI.prefixIndex("Template:Doc/Start/");
+        //String pageText = WIKI.getPageText("Template:Doc/End/en");
+        //for (String title : titles) {
+        //    title = "Template:Doc/End/" + title.substring(title.lastIndexOf('/') + 1);
+        //    System.out.println(title);
+        //    if (WIKI.exists(title))
+        //        continue;
+        //    System.out.println(WIKI.edit(title, pageText, "Created page with \"Template:Doc/End\""));
+        //}
         runConsole();
     }
 
@@ -113,9 +125,11 @@ public class Main {
             return null;
         }
 
-        return new Wiki.Builder()
+        Wiki.Builder builder = new Wiki.Builder();
+        if (config.doLogin())
+            builder.withLogin(config.getUsername(), config.getPassword());
+        return builder
                 .withApiEndpoint(apiEndpoint)
-                .withLogin(config.getUsername(), config.getPassword())
                 .withUserAgent(config.getUserAgent())
                 .withDefaultLogger(defaultLogger)
                 .build();

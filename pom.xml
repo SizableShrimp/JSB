@@ -41,7 +41,7 @@
         <dependency>
             <groupId>com.github.SizableShrimp</groupId>
             <artifactId>jwiki</artifactId>
-            <version>889423e1c7</version>
+            <version>8a8d1db4d0</version>
         </dependency>
         <dependency>
             <groupId>org.reflections</groupId>

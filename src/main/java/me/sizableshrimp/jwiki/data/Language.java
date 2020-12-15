@@ -1,11 +1,26 @@
 package me.sizableshrimp.jwiki.data;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import me.sizableshrimp.jwiki.WikiUtil;
+import org.fastily.jwiki.core.WQuery;
 import org.fastily.jwiki.core.Wiki;
+import org.fastily.jwiki.util.FL;
+import org.fastily.jwiki.util.GSONP;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * An immutable object that stores wiki data about Languages from
@@ -15,9 +30,40 @@ import org.fastily.jwiki.core.Wiki;
 @Value
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Language {
+    /**
+     * The MediaWiki-specific language code which overlaps with some standards.
+     */
+    @NotNull
+    @NonNull
     String code;
-    String localized;
+    /**
+     * The writing direction of the language.
+     */
+    @Nullable
+    Direction writingDirection;
+    /**
+     * The name of the language in its own language. In some rare instances for untranslated languages, this is blank.
+     */
+    @NotNull
+    @NonNull
+    String autonym;
+    /**
+     * The name of the language in English, if it exists.
+     */
+    @Nullable
     String english;
+
+    //TODO This query only works in MW 1.34+, use once Gamepedia updates (when?)
+    ///**
+    // * https://www.mediawiki.org/wiki/API:Languageinfo
+    // */
+    //private static final WQuery.QTemplate LANGUAGEINFO = new WQuery.QTemplate(FL.pMap("action", "query", "meta", "languageinfo", "liprop", "code|dir|autonym|name",
+    //        "uselang", "en"), "query");
+    /**
+     * https://www.mediawiki.org/wiki/API:Siteinfo
+     */
+    private static final WQuery.QTemplate LANGUAGEINFO = new WQuery.QTemplate(FL.pMap("action", "query", "meta", "siteinfo", "siprop", "languages"), "query");
+    private static Map<String, Language> languages = null;
 
     /**
      * Get a {@link Language} by a title with a subpage as a language code (ex. "GregTech/de").
@@ -45,29 +91,92 @@ public class Language {
      * @return A {@link Language} object, or null if invalid.
      */
     public static Language getByCode(Wiki wiki, String code) {
-        String localized = getLanguageInfo(wiki, code);
-        if (localized == null || localized.equals(code))
-            return null;
-        String english = getLanguageInfo(wiki, code + "|en");
+        if (languages == null)
+            loadLanguages(wiki);
 
-        return new Language(code, localized, english);
+        return languages.get(code);
     }
 
-    private static String getLanguageInfo(Wiki wiki, String data) {
-        JsonObject parse = WikiUtil.parse(wiki, null, "{{#language:" + data + "}}").getAsJsonObject().getAsJsonObject("parse");
-        //System.out.println(parse);
-        if (parse == null)
-            return null;
-        JsonObject text = parse.getAsJsonObject("text");
-        if (text == null)
-            return null;
+    private static void loadLanguages(Wiki wiki) {
+        if (languages != null)
+            return;
+        languages = new HashMap<>();
+        if (wiki == null)
+            return;
+        List<JsonObject> languageinfo = WikiUtil.getQueryRepliesAsList(new WQuery(wiki, LANGUAGEINFO),"languages");
+        List<JsonObject> englishNames = WikiUtil.getQueryRepliesAsList(new WQuery(wiki, LANGUAGEINFO).set("siinlanguagecode", "en"), "languages");
 
-        String output = text.get("*").getAsString();
-        // Data is normally wrapped like so "<p>data\n<\p>"
-        return output.substring(3, output.length() - 5);
+        parseLanguageInfo(languageinfo, englishNames);
+        parseOverrides(Scribunto.runScribuntoCode(wiki, "Language/Names", null).getReturnJson().getAsJsonObject());
+    }
+
+    private static void parseLanguageInfo(List<JsonObject> languageinfo, List<JsonObject> englishNames) {
+        for (int i = 0; i < languageinfo.size(); i++) {
+            JsonObject json = languageinfo.get(i);
+
+            // The older siprop=languages API does not return writing direction and takes another request for English-localized names
+            String code = GSONP.getStr(json, "code");
+            String autonym = GSONP.getStr(json, "*");
+            String english = GSONP.getStr(englishNames.get(i).getAsJsonObject(), "*");
+            languages.put(code, new Language(code, null, autonym, english));
+        }
+    }
+
+    //private static void parseLanguageInfo(List<JsonObject> languageinfo) {
+    //    for (JsonObject json : languageinfo) {
+    //        String code = GSONP.getStr(json, "code");
+    //        Direction writingDirection = Direction.getDirection(GSONP.getStr(json, "dir"));
+    //        String autonym = GSONP.getStr(json, "autonym");
+    //        String english = GSONP.getStr(json, "name");
+    //        languages.put(code, new Language(code, writingDirection, autonym, english));
+    //    }
+    //}
+
+    private static void parseOverrides(JsonObject overrides) {
+        for (Map.Entry<String, JsonElement> entry : overrides.entrySet()) {
+            String code = entry.getKey();
+            JsonArray json = entry.getValue().getAsJsonArray();
+            languages.put(code, new Language(code, null, json.get(1).getAsString(), json.get(0).getAsString()));
+        }
+    }
+
+    public static boolean hasLoadedLanguages() {
+        return languages != null;
     }
 
     public boolean hasEnglishTranslation() {
-        return !localized.equals(english) && english != null && !english.isEmpty();
+        return english != null && !autonym.equals(english) && !english.isEmpty();
+    }
+
+    public static Map<String, Language> getAllLanguages(Wiki wiki) {
+        loadLanguages(wiki);
+        return languages;
+    }
+
+    public static Set<String> flattenTranslationPages(Wiki wiki, Set<String> titles) {
+        return titles.stream()
+                .map(title -> flattenTranslationPage(wiki, title))
+                .collect(Collectors.toSet());
+    }
+
+    public static String flattenTranslationPage(Wiki wiki, String title) {
+        return Language.getByTitle(wiki, title) == null ? title : title.substring(0, title.lastIndexOf('/'));
+    }
+
+    @RequiredArgsConstructor
+    public enum Direction {
+        LEFT_TO_RIGHT("ltr"),
+        RIGHT_TO_LEFT("rtl");
+
+        private final String dir;
+
+        public static Direction getDirection(String dir) {
+            for (Direction value : values()) {
+                if (value.dir.equals(dir))
+                    return value;
+            }
+
+            return null;
+        }
     }
 }

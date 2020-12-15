@@ -20,6 +20,8 @@ public class Config {
     @Expose
     @Getter
     private String password;
+    @Expose
+    private boolean login;
 
     private Config() {}
 
@@ -33,5 +35,9 @@ public class Config {
 
     public String getApi() {
         return baseapi;
+    }
+
+    public boolean doLogin() {
+        return login;
     }
 }

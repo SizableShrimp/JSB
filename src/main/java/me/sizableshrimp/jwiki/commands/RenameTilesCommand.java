@@ -17,7 +17,6 @@ import org.fastily.jwiki.util.GSONP;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -72,8 +71,9 @@ public class RenameTilesCommand extends Command {
             System.out.println("Invalid response, one of O, T, or P.");
             return;
         }
-        Set<JsonObject> tiles = getModTiles(mod);
+        List<JsonObject> tiles = getModTiles(mod);
         List<String> lines = Files.readAllLines(path);
+        //List<String> invalidTilePages = wiki.getCategoryMembers("Category:Pages with a missing tile name");
         for (String line : lines) {
             if (line.endsWith("="))
                 continue;
@@ -93,10 +93,6 @@ public class RenameTilesCommand extends Command {
             } else if (decision == Decision.PAGES) {
                 updatePage(mod, before, after);
             }
-            //editTile(tileId, before);
-            //Set<String> tileUsages = getTileUsages(tileId);
-            //editTile(tileId, after);
-            //System.out.println(after + " - " + tileUsages);
         }
     }
 
@@ -159,29 +155,27 @@ public class RenameTilesCommand extends Command {
         return args == null ? "" : args.getName();
     }
 
-    private void editTile(int tileId, String newName) throws IOException {
-        System.out.println(wiki.basicPOST("edittile", FL.pMap("tstoken", wiki.getConfig().getToken(),
-                "tsid", Integer.toString(tileId), "tstoname", newName)).body().string());
-    }
+    //private void editTile(int tileId, String newName) throws IOException {
+    //    System.out.println(wiki.basicPOST("edittile", FL.pMap("tstoken", wiki.getConfig().getToken(),
+    //            "tsid", Integer.toString(tileId), "tstoname", newName)).body().string());
+    //}
 
-    private Set<JsonObject> getModTiles(Mod mod) {
+    private List<JsonObject> getModTiles(Mod mod) {
         WQuery queryListTiles = new WQuery(wiki, -1, LISTTILES);
         queryListTiles.set("tsmod", mod.getAbbrv());
-        return getQueryReplies(queryListTiles).stream()
-                .flatMap(reply -> reply.listComp("tiles").stream())
-                .collect(Collectors.toSet());
+        return WikiUtil.getQueryRepliesAsList(queryListTiles, "tiles");
     }
 
-    private Set<String> getTileUsages(int tileId) {
-        WQuery queryTileUsages = new WQuery(wiki, -1, TILEUSAGES);
-        queryTileUsages.set("tstile", Integer.toString(tileId));
-        return getQueryReplies(queryTileUsages).stream()
-                .flatMap(reply -> reply.listComp("tileusages").stream())
-                .map(json -> GSONP.getStr(json, "title"))
-                .collect(Collectors.toSet());
-    }
+    //private Set<String> getTileUsages(int tileId) {
+    //    WQuery queryTileUsages = new WQuery(wiki, -1, TILEUSAGES);
+    //    queryTileUsages.set("tstile", Integer.toString(tileId));
+    //    return getQueryReplies(queryTileUsages).stream()
+    //            .flatMap(reply -> reply.listComp("tileusages").stream())
+    //            .map(json -> GSONP.getStr(json, "title"))
+    //            .collect(Collectors.toSet());
+    //}
 
-    private int getTileId(Set<JsonObject> tiles, String name) {
+    private int getTileId(List<JsonObject> tiles, String name) {
         return tiles.stream()
                 .filter(json -> name.equals(GSONP.getStr(json, "name")))
                 .findFirst()
@@ -193,7 +187,7 @@ public class RenameTilesCommand extends Command {
         WQuery queryOreDict = new WQuery(wiki, -1, OREDICTSEARCH);
         queryOreDict.set("odmod", mod.getAbbrv());
         queryOreDict.set("odname", before);
-        List<QReply> replies = getQueryReplies(queryOreDict);
+        List<QReply> replies = WikiUtil.getQueryReplies(queryOreDict);
         for (QReply reply : replies) {
             List<JsonObject> entries = reply.listComp("oredictentries");
             for (JsonObject json : entries) {
@@ -212,16 +206,6 @@ public class RenameTilesCommand extends Command {
                 }
             }
         }
-    }
-
-    private List<QReply> getQueryReplies(WQuery query) {
-        List<QReply> list = new ArrayList<>();
-
-        while (query.has()) {
-            list.add(query.next());
-        }
-
-        return list;
     }
 
     private enum Decision {

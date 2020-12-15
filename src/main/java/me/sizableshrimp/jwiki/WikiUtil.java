@@ -6,12 +6,17 @@ import com.google.gson.JsonParser;
 import lombok.NonNull;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.fastily.jwiki.core.WQuery;
+import org.fastily.jwiki.core.WQuery.QReply;
 import org.fastily.jwiki.core.Wiki;
 import org.fastily.jwiki.util.FL;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class WikiUtil {
     private WikiUtil() {}
@@ -22,6 +27,17 @@ public class WikiUtil {
     //                "noredirect", Boolean.toString(!leaveRedirect)));
     //    }
 
+    /**
+     * Run input parse text through {@code action=parse} with the specified {@code contentmodel}.
+     * If a content model is not specified, defaults to wikitext.
+     *
+     * @param wiki A {@link Wiki} object used to perform API calls.
+     * @param contentmodel The content model of the input text, defaults to "wikitext" if null.
+     * Some possible options are "wikitext", "GadgetDefinition", "Scribunto", "javascript", "json", "css", and "text".
+     * Note that these are <i>case-sensitive</i>.
+     * @param parse The input text to parse with the given {@code wiki} and {@code contentmodel}.
+     * @return The JSON data returned from the API.
+     */
     public static JsonElement parse(Wiki wiki, String contentmodel, String parse) {
         String cm = contentmodel == null ? "wikitext" : contentmodel;
         return jsonFromResponse(wiki.basicGET("parse", "wrapoutputclass", "", "disablelimitreport", "true", "contentmodel", cm, "text", parse));
@@ -79,5 +95,26 @@ public class WikiUtil {
         if (noRedirect)
             formData.put("noredirect", "true");
         return AReply.processAction(wiki, "move", formData);
+    }
+
+    public static List<QReply> getQueryReplies(WQuery query) {
+        List<QReply> list = new ArrayList<>();
+
+        while (query.has()) {
+            QReply reply = query.next();
+            if (reply == null) {
+                System.err.println("Error when parsing QReply at index " + (list.size() - 1));
+                break;
+            }
+            list.add(reply);
+        }
+
+        return list;
+    }
+
+    public static List<JsonObject> getQueryRepliesAsList(WQuery query, String listComp) {
+        return getQueryReplies(query).stream()
+                .flatMap(reply -> reply.listComp(listComp).stream())
+                .collect(Collectors.toList());
     }
 }
