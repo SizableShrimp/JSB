@@ -1,9 +1,11 @@
-# Config file
-config.json
+# Config files
+/*.json
 
 # Build files
-/target
+/build
+/.gradle
+/out
 
-# IDEA specific
+# IntelliJ IDEA
 *.iml
 /.idea
