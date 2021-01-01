@@ -7,6 +7,6 @@ It uses a modular command system to allow the user to execute commands in Discor
 The jwiki library used is still in development but not actively updated. I might PR stuff in later.
 
 ## To-Do
-[x] Make this bot integrate with Discord. ([Discord4J](https://github.com/Discord4J/Discord4J))
-[ ] Add more shrimp. 🦐🦐🦐
-[ ] Drink more coffee. ☕☕☕
+* [x] Make this bot integrate with Discord. ([Discord4J](https://github.com/Discord4J/Discord4J))
+* [ ] Add more shrimp. 🦐🦐🦐
+* [ ] Drink more coffee. ☕☕☕
