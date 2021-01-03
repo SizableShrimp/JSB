@@ -32,6 +32,7 @@ import discord4j.rest.util.Permission;
 import me.sizableshrimp.jsb.Bot;
 import me.sizableshrimp.jsb.api.EventListener;
 import me.sizableshrimp.jsb.commands.WikilinkCommand;
+import me.sizableshrimp.jsb.util.MessageUtil;
 import org.fastily.jwiki.core.Wiki;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -67,10 +68,7 @@ public class WikilinkListener extends EventListener<MessageCreateEvent> {
 
                     return WikilinkCommand.genWikilink(builder, wiki, link);
                 }).zipWith(event.getMessage().getChannel())
-                .flatMap(tuple -> {
-                    String message = tuple.getT1().toString();
-                    return message.isBlank() ? Mono.empty() : tuple.getT2().createMessage(message);
-                });
+                .flatMap(tuple -> MessageUtil.sendMessage(tuple.getT1().toString(), tuple.getT2()));
     }
 
     @Override

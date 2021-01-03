@@ -27,6 +27,7 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.channel.MessageChannel;
 import me.sizableshrimp.jsb.args.Args;
 import me.sizableshrimp.jsb.args.ArgsProcessor;
+import me.sizableshrimp.jsb.util.MessageUtil;
 import org.fastily.jwiki.core.Wiki;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,7 @@ public class CommandManager {
         loadCommands();
     }
 
-    public Mono<?> executeCommand(MessageCreateEvent event) {
+    public Mono<Void> executeCommand(MessageCreateEvent event) {
         Args args = ArgsProcessor.processWithPrefix(event.getMessage().getContent());
         if (args == null) {
             args = ArgsProcessor.processWithPrefixRegex(mentionPrefix, event.getMessage().getContent());
@@ -76,7 +77,8 @@ public class CommandManager {
 
         return event.getMessage().getChannel()
                 .flatMap(MessageChannel::type)
-                .then(command.run(new CommandContext(this, wiki), event, args));
+                .then(command.run(new CommandContext(this, wiki), event, args).then())
+                .onErrorResume(NoPermissionException.class, noperms -> event.getMessage().getChannel().flatMap(channel -> MessageUtil.sendMessage(noperms.getMessage(), channel)).then());
     }
 
     public void loadCommands() {

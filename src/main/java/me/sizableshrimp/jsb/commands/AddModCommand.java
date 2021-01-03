@@ -70,7 +70,6 @@ public class AddModCommand extends AbstractCommand {
         }
 
         return requireRole(event, "Editor")
-                .flatMap(e -> e.getMessage().getChannel())
                 .flatMap(channel -> {
                     String modAbbrv = args.getArg(0).toUpperCase();
                     String modName = args.getArg(1);
@@ -99,7 +98,7 @@ public class AddModCommand extends AbstractCommand {
                                 .flatMap(m -> m.addReaction(ReactionEmoji.unicode("✅")).thenReturn(m))
                                 .flatMap(m -> m.addReaction(ReactionEmoji.unicode("❌")).thenReturn(m));
                     }
-                }).switchIfEmpty(event.getMessage().getChannel().flatMap(channel -> sendMessage("You must be an editor to execute this command!", channel)));
+                });
     }
 
     public static final class Confirmation {

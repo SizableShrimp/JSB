@@ -63,7 +63,6 @@ public class ScribuntoCommand extends AbstractCommand {
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         return requireRole(event, "Editor")
-                .flatMap(e -> e.getMessage().getChannel())
                 .flatMap(channel -> {
                     if (args.getLength() < 2) {
                         return incorrectUsage(event);
@@ -99,7 +98,7 @@ public class ScribuntoCommand extends AbstractCommand {
                     } else {
                         return sendMessage("Unknown type value \"" + type + "\" for JSON: " + printJson(json), channel);
                     }
-                }).switchIfEmpty(event.getMessage().getChannel().flatMap(channel -> sendMessage("You must be an editor to execute this command!", channel)));
+                });
     }
 
     private String printJson(JsonObject json) {

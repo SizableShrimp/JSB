@@ -27,16 +27,19 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import me.sizableshrimp.jsb.commands.utility.HelpCommand;
+import me.sizableshrimp.jsb.util.MessageUtil;
 import reactor.core.publisher.Mono;
 
 import java.util.function.Consumer;
 
 public abstract class AbstractCommand implements Command {
     // Helper functions
-    protected static Mono<MessageCreateEvent> requireRole(MessageCreateEvent event, String role) {
+    protected static Mono<MessageChannel> requireRole(MessageCreateEvent event, String role) {
         return Mono.just(event)
                 .filter(e -> e.getMember().isPresent())
-                .filterWhen(e -> e.getMember().get().getRoles().any(r -> role.equals(r.getName())));
+                .filterWhen(e -> e.getMember().get().getRoles().any(r -> role.equals(r.getName())))
+                .flatMap(e -> e.getMessage().getChannel())
+                .switchIfEmpty(Mono.error(() -> new NoPermissionException(role)));
     }
 
     protected final Mono<Message> incorrectUsage(MessageCreateEvent event) {

@@ -20,38 +20,30 @@
  * SOFTWARE.
  */
 
-package me.sizableshrimp.jsb.commands;
+package me.sizableshrimp.jsb.util;
 
-import discord4j.core.event.domain.message.MessageCreateEvent;
-import me.sizableshrimp.jsb.Bot;
-import me.sizableshrimp.jsb.api.AbstractCommand;
-import me.sizableshrimp.jsb.api.CommandContext;
-import me.sizableshrimp.jsb.api.CommandInfo;
-import me.sizableshrimp.jsb.args.Args;
+import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.MessageChannel;
+import discord4j.core.spec.EmbedCreateSpec;
 import reactor.core.publisher.Mono;
 
-import java.util.Set;
+import java.util.function.Consumer;
 
-public class ExitCommand extends AbstractCommand {
-    @Override
-    public CommandInfo getInfo() {
-        return new CommandInfo(this, "%cmdname%", "Exit the program");
+/**
+ * A util class used to make sure the bot does not interfere with any other bots by adding a ZWS before each message.
+ */
+public final class MessageUtil {
+    private MessageUtil() {}
+
+    public static Mono<Message> sendMessage(String message, MessageChannel channel) {
+        return message.isBlank() ? Mono.empty() : channel.createMessage("\u200B" + message);
     }
 
-    @Override
-    public String getName() {
-        return "exit";
+    public static Mono<Message> sendEmbed(Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
+        return channel.createMessage(message -> message.setEmbed(embed));
     }
 
-    @Override
-    public Set<String> getAliases() {
-        return Set.of("stop");
-    }
-
-    @Override
-    public Mono<Void> run(CommandContext context, MessageCreateEvent event, Args args) {
-        return requireRole(event, "Moderator")
-                .doOnNext(channel -> Bot.LOGGER.info("Exiting program..."))
-                .flatMap(channel -> sendMessage("Exiting program", channel).then(event.getClient().logout()));
+    public static Mono<Message> sendEmbed(String message, Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
+        return channel.createMessage(m -> m.setContent("\u200B" + message).setEmbed(embed));
     }
 }

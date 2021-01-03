@@ -45,6 +45,21 @@ public final class Config {
         return GSON.fromJson(Files.newBufferedReader(path), Config.class);
     }
 
+    public static Config loadHeroku() {
+        Config config = new Config();
+
+        config.useragent = System.getenv("USERAGENT");
+        config.username = System.getenv("USERNAME");
+        config.password = System.getenv("PASSWORD");
+        config.login = System.getenv("LOGIN") != null;
+        config.baseapi = System.getenv("BASE_API");
+        config.botToken = System.getenv("BOT_TOKEN");
+        config.prefix = System.getenv("PREFIX");
+        config.ownerId = Long.parseLong(System.getenv("OWNER_ID"));
+
+        return config;
+    }
+
     public String getUserAgent() {
         return this.useragent;
     }

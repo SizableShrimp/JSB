@@ -24,7 +24,7 @@ package me.sizableshrimp.jsb.commands;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import me.sizableshrimp.jsb.WikiUtil;
+import me.sizableshrimp.jsb.util.WikiUtil;
 import me.sizableshrimp.jsb.api.AbstractCommand;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;

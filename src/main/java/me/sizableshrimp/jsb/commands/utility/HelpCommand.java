@@ -96,6 +96,7 @@ public class HelpCommand extends AbstractCommand {
     private Mono<Message> displayHelp(CommandContext context, MessageCreateEvent event) {
         List<String> names = context.getCommandManager().getCommands().stream()
                 .map(Command::getName)
+                .sorted()
                 .collect(Collectors.toList());
 
         Consumer<EmbedCreateSpec> spec = display("help", this)

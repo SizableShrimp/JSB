@@ -22,28 +22,18 @@
 
 package me.sizableshrimp.jsb.api;
 
-import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.channel.MessageChannel;
-import discord4j.core.spec.EmbedCreateSpec;
-import reactor.core.publisher.Mono;
+import java.util.Set;
 
-import java.util.function.Consumer;
+public class NoPermissionException extends Exception {
+    private static final Set<Character> VOWELS = Set.of('a', 'e', 'i', 'o', 'u');
+    private final String role;
 
-/**
- * A util class used to make sure the bot does not interfere with any other bots by adding a ZWS before each message.
- */
-public final class MessageUtil {
-    private MessageUtil() {}
-
-    public static Mono<Message> sendMessage(String message, MessageChannel channel) {
-        return channel.createMessage("\u200B" + message);
+    public NoPermissionException(String role) {
+        super(String.format("You must be %s `%s` to execute this command!", VOWELS.contains(Character.toLowerCase(role.charAt(0))) ? "an" : "a", role));
+        this.role = role;
     }
 
-    public static Mono<Message> sendEmbed(Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
-        return channel.createMessage(message -> message.setEmbed(embed));
-    }
-
-    public static Mono<Message> sendEmbed(String message, Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
-        return channel.createMessage(m -> m.setContent("\u200B" + message).setEmbed(embed));
+    public String getRole() {
+        return role;
     }
 }

@@ -66,7 +66,6 @@ public class RemoveModCommand extends AbstractCommand {
         }
 
         return requireRole(event, "Editor")
-                .flatMap(e -> e.getMessage().getChannel())
                 .flatMap(channel -> {
                     Mod toDelete = Mod.getMod(context.getWiki(), args.getArgRange(0));
                     if (toDelete == null) {
@@ -84,7 +83,7 @@ public class RemoveModCommand extends AbstractCommand {
                     return confirm.doOnNext(m -> awaitingConfirmation.put(m.getId(), new Confirmation(event.getMessage().getAuthor().get().getId(), m.getId(), toDelete)))
                             .flatMap(m -> m.addReaction(ReactionEmoji.unicode("❌")).thenReturn(m))
                             .flatMap(m -> m.addReaction(ReactionEmoji.unicode("\uD83D\uDDD1")).thenReturn(m));
-                }).switchIfEmpty(event.getMessage().getChannel().flatMap(channel -> sendMessage("You must be an editor to execute this command!", channel)));
+                });
     }
 
     public static final class Confirmation {

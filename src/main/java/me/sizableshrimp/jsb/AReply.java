@@ -24,6 +24,7 @@ package me.sizableshrimp.jsb;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import me.sizableshrimp.jsb.util.WikiUtil;
 import okhttp3.Response;
 import org.fastily.jwiki.core.Wiki;
 import org.fastily.jwiki.util.FL;

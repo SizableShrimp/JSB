@@ -20,12 +20,14 @@
  * SOFTWARE.
  */
 
-package me.sizableshrimp.jsb;
+package me.sizableshrimp.jsb.util;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import me.sizableshrimp.jsb.AReply;
+import me.sizableshrimp.jsb.Bot;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.fastily.jwiki.core.WQuery;
@@ -41,7 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class WikiUtil {
+public final class WikiUtil {
     private static final WQuery.QTemplate SITE_INFO = new WQuery.QTemplate(FL.pMap("action", "query", "meta", "siteinfo"), "query");
     private static final Map<Wiki, String> baseUrls = new HashMap<>();
 

@@ -20,38 +20,17 @@
  * SOFTWARE.
  */
 
-package me.sizableshrimp.jsb.commands;
+package me.sizableshrimp.jsb;
 
-import discord4j.core.event.domain.message.MessageCreateEvent;
-import me.sizableshrimp.jsb.Bot;
-import me.sizableshrimp.jsb.api.AbstractCommand;
-import me.sizableshrimp.jsb.api.CommandContext;
-import me.sizableshrimp.jsb.api.CommandInfo;
-import me.sizableshrimp.jsb.args.Args;
-import reactor.core.publisher.Mono;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Set;
-
-public class ExitCommand extends AbstractCommand {
-    @Override
-    public CommandInfo getInfo() {
-        return new CommandInfo(this, "%cmdname%", "Exit the program");
-    }
-
-    @Override
-    public String getName() {
-        return "exit";
-    }
-
-    @Override
-    public Set<String> getAliases() {
-        return Set.of("stop");
-    }
-
-    @Override
-    public Mono<Void> run(CommandContext context, MessageCreateEvent event, Args args) {
-        return requireRole(event, "Moderator")
-                .doOnNext(channel -> Bot.LOGGER.info("Exiting program..."))
-                .flatMap(channel -> sendMessage("Exiting program", channel).then(event.getClient().logout()));
+@RestController
+public class WebController {
+    @RequestMapping("/")
+    @ResponseBody
+    public String home() {
+        return "The JSB Discord Bot is currently running.";
     }
 }

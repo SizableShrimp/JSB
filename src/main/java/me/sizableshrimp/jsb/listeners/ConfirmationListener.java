@@ -30,6 +30,7 @@ import me.sizableshrimp.jsb.api.EventListener;
 import me.sizableshrimp.jsb.commands.AddModCommand;
 import me.sizableshrimp.jsb.commands.RemoveModCommand;
 import me.sizableshrimp.jsb.data.Mod;
+import me.sizableshrimp.jsb.util.MessageUtil;
 import org.fastily.jwiki.core.Wiki;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -63,18 +64,18 @@ public class ConfirmationListener extends EventListener<ReactionAddEvent> {
         Mod newMod = confirmation.newMod;
         if (event.getEmoji().equals(X)) {
             return event.getMessage().flatMap(Message::delete)
-                    .then(event.getChannel().flatMap(channel -> channel.createMessage(String.format("Cancelling addition of mod named **%s** with abbreviation `%s`...",
-                            newMod.getName(), newMod.getAbbrv()))));
+                    .then(event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("Cancelling addition of mod named **%s** with abbreviation `%s`...",
+                            newMod.getName(), newMod.getAbbrv()), channel)));
         }
 
         // Otherwise, it has to be a checkmark
         Mod conflict = newMod.add();
         if (conflict != null) {
-            return event.getChannel().flatMap(channel -> channel.createMessage(String.format("This mod abbreviation already exists as %s with abbreviation `%s`!",
-                    conflict.getName(), conflict.getAbbrv())));
+            return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("This mod abbreviation already exists as %s with abbreviation `%s`!",
+                    conflict.getName(), conflict.getAbbrv()), channel));
         } else {
-            return event.getChannel().flatMap(channel -> channel.createMessage(String.format("Added **%s** (abbreviated as `%s`) to the mods list. Please mark for translation.",
-                    newMod.getName(), newMod.getAbbrv())));
+            return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("Added **%s** (abbreviated as `%s`) to the mods list. Please mark for translation.",
+                    newMod.getName(), newMod.getAbbrv()), channel));
         }
     }
 
@@ -88,13 +89,13 @@ public class ConfirmationListener extends EventListener<ReactionAddEvent> {
 
         if (event.getEmoji().equals(WASTEBASKET)) {
             return event.getMessage().flatMap(Message::delete)
-                    .then(event.getChannel().flatMap(channel -> channel.createMessage(String.format("Cancelling deletion of mod named **%s** with abbreviation `%s`...",
-                            toDelete.getName(), toDelete.getAbbrv()))));
+                    .then(event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("Cancelling deletion of mod named **%s** with abbreviation `%s`...",
+                            toDelete.getName(), toDelete.getAbbrv()), channel)));
         }
 
         // Otherwise, it has to be an x
         toDelete.remove();
-        return event.getChannel().flatMap(channel -> channel.createMessage(String.format("Removed **%s** (abbreviated as `%s`) from the mods list. Please mark for translation.",
-                toDelete.getName(), toDelete.getAbbrv())));
+        return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("Removed **%s** (abbreviated as `%s`) from the mods list. Please mark for translation.",
+                toDelete.getName(), toDelete.getAbbrv()), channel));
     }
 }
