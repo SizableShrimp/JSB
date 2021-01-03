@@ -16,16 +16,16 @@ public interface Command {
         return Set.of();
     }
 
-    /**
-     * Used to run a command on conditions other than name, like tagging the bot, etc.
-     *
-     * @param message The message to use as an input.
-     * @return True if the command meets a condition to run other than a matching name. False otherwise. (This should
-     * not check if the command name or aliases match.)
-     */
-    default boolean isCommand(Message message) {
-        return false;
-    }
+    // /**
+    //  * Used to run a command on conditions other than name, like tagging the bot, etc.
+    //  *
+    //  * @param message The message to use as an input.
+    //  * @return True if the command meets a condition to run other than a matching name. False otherwise. (This should
+    //  * not check if the command name or aliases match.)
+    //  */
+    // default boolean isCommand(Message message) {
+    //     return false;
+    // }
 
     Mono<?> run(CommandContext context, MessageCreateEvent event, Args args);
 }

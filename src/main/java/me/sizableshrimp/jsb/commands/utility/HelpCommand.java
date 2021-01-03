@@ -28,14 +28,14 @@ public class HelpCommand extends AbstractCommand {
         return "help";
     }
 
-    @Override
-    public boolean isCommand(Message message) {
-        return message.getUserMentionIds().contains(message.getClient().getSelfId());
-    }
+    // @Override
+    // public boolean isCommand(Message message) {
+    //     return message.getUserMentionIds().contains(message.getClient().getSelfId());
+    // }
 
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
-        if (args.getLength() != 1) {
+        if (args == null || args.getLength() != 1) {
             return displayHelp(context, event);
         }
 

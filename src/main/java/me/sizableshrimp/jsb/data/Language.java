@@ -179,6 +179,16 @@ public final class Language {
         return this.english;
     }
 
+    @Override
+    public String toString() {
+        return "Language{" +
+                "code='" + code + '\'' +
+                ", autonym='" + autonym + '\'' +
+                ", writingDirection=" + writingDirection +
+                ", english='" + english + '\'' +
+                '}';
+    }
+
     public enum Direction {
         LEFT_TO_RIGHT("ltr"),
         RIGHT_TO_LEFT("rtl");

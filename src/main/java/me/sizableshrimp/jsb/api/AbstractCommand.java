@@ -11,7 +11,13 @@ import java.util.function.Consumer;
 
 public abstract class AbstractCommand implements Command {
     // Helper functions
-    protected Mono<Message> incorrectUsage(MessageCreateEvent event) {
+    protected static Mono<MessageCreateEvent> requireRole(MessageCreateEvent event, String role) {
+        return Mono.just(event)
+                .filter(e -> e.getMember().isPresent())
+                .filterWhen(e -> e.getMember().get().getRoles().any(r -> role.equals(r.getName())));
+    }
+
+    protected final Mono<Message> incorrectUsage(MessageCreateEvent event) {
         return event.getMessage().getChannel().flatMap(c -> sendEmbed(HelpCommand.display(event, this), c));
     }
 

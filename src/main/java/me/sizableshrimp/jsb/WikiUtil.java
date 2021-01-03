@@ -1,25 +1,28 @@
 package me.sizableshrimp.jsb;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.sun.tools.javac.Main;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.fastily.jwiki.core.WQuery;
 import org.fastily.jwiki.core.WQuery.QReply;
 import org.fastily.jwiki.core.Wiki;
 import org.fastily.jwiki.util.FL;
-import org.jetbrains.annotations.Nullable;
 import reactor.util.annotation.NonNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class WikiUtil {
+    private static final WQuery.QTemplate SITE_INFO = new WQuery.QTemplate(FL.pMap("action", "query", "meta", "siteinfo"), "query");
+    private static final Map<Wiki, String> baseUrls = new HashMap<>();
+
     private WikiUtil() {}
 
     //    public static boolean move(Wiki wiki, String fromTitle, String toTile, @Nullable String reason,
@@ -52,7 +55,7 @@ public class WikiUtil {
      * @return A {@link JsonElement} parsed from a {@link ResponseBody}, or an empty {@link JsonObject} on invalid {@link Response}.
      */
     @NonNull
-    public static JsonElement jsonFromResponse(@Nullable Response response) {
+    public static JsonElement jsonFromResponse(Response response) {
         if (response == null)
             return new JsonObject();
 
@@ -104,7 +107,7 @@ public class WikiUtil {
         while (query.has()) {
             QReply reply = query.next();
             if (reply == null) {
-                Bot.LOGGER.error("Error when parsing QReply at index " + (list.size() - 1));
+                Bot.LOGGER.error("Error when parsing QReply at index {}", list.size() - 1);
                 break;
             }
             list.add(reply);
@@ -117,5 +120,51 @@ public class WikiUtil {
         return getQueryReplies(query).stream()
                 .flatMap(reply -> reply.listComp(listComp).stream())
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns a link to the {@code page} specified, or null if it does not exist.
+     * Supports interwiki links.
+     *
+     * @param wiki The {@link  Wiki} instance.
+     * @param page The page to link to.
+     * @return a link to the {@code page} specified, or null if it does not exist.
+     */
+    public static String getWikiPageUrl(Wiki wiki, String page) {
+        JsonObject json = WikiUtil.jsonFromResponse(wiki.basicGET("parse", "contentmodel", "wikitext", "wrapoutputclass", "",
+                "disablelimitreport", "true", "text", "[[" + page + "]]")).getAsJsonObject();
+        json = json.get("parse").getAsJsonObject();
+        JsonArray localLinks = json.get("links") == null ? new JsonArray() : json.get("links").getAsJsonArray();
+        JsonArray interwikiLinks = json.get("iwlinks") == null ? new JsonArray() : json.get("iwlinks").getAsJsonArray();
+
+        if (localLinks.size() > 0) {
+            JsonObject obj = localLinks.get(0).getAsJsonObject();
+            String link = obj.get("*").getAsString();
+            return getBaseArticleUrl(wiki) + link.replace(' ', '_');
+        }
+
+        if (interwikiLinks.size() > 0) {
+            JsonObject obj = interwikiLinks.get(0).getAsJsonObject();
+            return obj.get("url").getAsString();
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the base article url including a trailing slash.
+     *
+     * @param wiki The {@link Wiki} instance.
+     * @return the base article url including a trailing slash.
+     */
+    public static String getBaseArticleUrl(Wiki wiki) {
+        if (baseUrls.containsKey(wiki))
+            return baseUrls.get(wiki);
+
+        WQuery query = new WQuery(wiki, SITE_INFO);
+        String base = query.next().metaComp("general").getAsJsonObject().get("base").getAsString();
+        base = base.substring(0, base.lastIndexOf('/') + 1); // Include the trailing slash but remove the main page
+        baseUrls.put(wiki, base);
+        return base;
     }
 }

@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class InfoCommand extends AbstractCommand {
-
     @Override
     public CommandInfo getInfo() {
         return new CommandInfo(this, "%cmdname%", "Displays information about the bot including uptime, author, and how the bot was made.");
@@ -48,7 +47,7 @@ public class InfoCommand extends AbstractCommand {
             embed.setAuthor("Information", null, null);
             embed.setDescription(description);
             embed.addField("Discord4J Version", GitProperties.getProperties().getProperty(GitProperties.APPLICATION_VERSION), true);
-            embed.addField("Prefix", Bot.getConfig().getPrefix(), false);
+            embed.addField("Prefix", '`' + Bot.getConfig().getPrefix() + '`', false);
             embed.addField("Uptime", getUptime(), false);
         };
     }

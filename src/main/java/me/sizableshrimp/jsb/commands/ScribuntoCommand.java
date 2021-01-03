@@ -1,5 +1,6 @@
 package me.sizableshrimp.jsb.commands;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
@@ -11,6 +12,8 @@ import me.sizableshrimp.jsb.data.Scribunto;
 import org.fastily.jwiki.util.GSONP;
 import reactor.core.publisher.Mono;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 public class ScribuntoCommand extends AbstractCommand {
@@ -37,21 +40,18 @@ public class ScribuntoCommand extends AbstractCommand {
 
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
-        if (event.getMember().isEmpty())
-            return Mono.empty();
-
-        return event.getMember().get().getRoles().any(r -> r.getName().equals("Editor"))
-                .filter(b -> b)
-                .flatMap(b -> event.getMessage().getChannel())
+        return requireRole(event, "Editor")
+                .flatMap(e -> e.getMessage().getChannel())
                 .flatMap(channel -> {
-                    if (args.getLength() != 2) {
+                    if (args.getLength() < 2) {
                         return incorrectUsage(event);
                     }
                     String module = args.getArg(0);
-                    Scribunto scrib = Scribunto.runScribuntoCode(context.getWiki(), module, args.getArg(1));
+                    String codeToExecute = args.getAfterSpace(2);
+                    Scribunto scrib = Scribunto.runScribuntoCode(context.getWiki(), module, codeToExecute);
                     JsonObject json = scrib.getResponseJson();
                     if (json == null) {
-                        return sendMessage(module + " does not exist", channel);
+                        return sendMessage("`" + module + "` does not exist", channel);
                     }
 
                     String type = GSONP.getStr(json, "type");
@@ -71,12 +71,18 @@ public class ScribuntoCommand extends AbstractCommand {
                         }
                         return sendMessage("```lua\n" + builder.toString() + "```", channel);
                     } else if ("error".equals(type)) {
-                        return sendMessage("An error occurred: " + GSONP.gsonPP.toJson(json), channel);
+                        return sendMessage("An error occurred: " + printJson(json), channel);
                     } else if (type == null) {
-                        return sendMessage("Type was null: " + GSONP.gsonPP.toJson(json), channel);
+                        return sendMessage("Type was null: " + printJson(json), channel);
                     } else {
-                        return sendMessage("Unknown type value \"" + type + "\" for JSON: " + GSONP.gsonPP.toJson(json), channel);
+                        return sendMessage("Unknown type value \"" + type + "\" for JSON: " + printJson(json), channel);
                     }
                 }).switchIfEmpty(event.getMessage().getChannel().flatMap(channel -> sendMessage("You must be an editor to execute this command!", channel)));
+    }
+
+    private String printJson(JsonObject json) {
+        json = json.deepCopy();
+        json.entrySet().removeIf(entry -> entry.getKey().startsWith("session"));
+        return "```json\n" + GSONP.gsonPP.toJson(json) + "```";
     }
 }
