@@ -22,6 +22,7 @@
 
 package me.sizableshrimp.jsb.commands.utility;
 
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,6 +58,11 @@ public class TilesheetRequestCommand extends AbstractCommand {
     @Override
     public Set<String> getAliases() {
         return Set.of("tilerequest", "tr");
+    }
+
+    @Override
+    public List<String> getRequiredRoles() {
+        return List.of("Editor");
     }
 
     @Override
