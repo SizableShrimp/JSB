@@ -45,6 +45,7 @@ public class ArgsProcessor {
     public static Args processWithPrefixRegex(Pattern prefixRegex, String data) {
         if (data == null || data.isBlank())
             return null;
+        data = data.trim();
         Matcher matcher = prefixRegex.matcher(data);
         if (!matcher.find() || matcher.start() != 0)
             return null;
@@ -72,6 +73,8 @@ public class ArgsProcessor {
                 } else {
                     escaped = true;
                 }
+            } else if (c == '\u200B') {
+                // Don't add zero-width spaces; they may have come from the user copying messages from us.
             } else if (c != ' ' || quote) {
                 // Append if not a space or still append space if inside a quote
                 current.append(c);

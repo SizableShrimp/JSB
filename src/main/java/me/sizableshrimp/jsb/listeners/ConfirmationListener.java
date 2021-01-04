@@ -26,6 +26,7 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.reaction.ReactionEmoji;
+import me.sizableshrimp.jsb.Bot;
 import me.sizableshrimp.jsb.api.EventListener;
 import me.sizableshrimp.jsb.commands.utility.mod.AddModCommand;
 import me.sizableshrimp.jsb.commands.utility.mod.RemoveModCommand;
@@ -69,13 +70,19 @@ public class ConfirmationListener extends EventListener<ReactionAddEvent> {
         }
 
         // Otherwise, it has to be a checkmark
-        Mod conflict = newMod.add();
-        if (conflict != null) {
-            return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("This mod abbreviation already exists as %s with abbreviation `%s`!",
-                    conflict.getName(), conflict.getAbbrv()), channel));
-        } else {
-            return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("Added **%s** (abbreviated as `%s`) to the mods list. Please mark for translation.",
-                    newMod.getName(), newMod.getAbbrv()), channel));
+        try {
+            boolean success = newMod.add();
+            String message;
+            if (success) {
+                message = String.format("Added **%s** (abbreviated as `%s`) to the mods list. Please mark for translation.", newMod.getName(), newMod.getAbbrv());
+                Bot.LOGGER.info("Added mod {} to mods list.", this);
+            } else {
+                message = "An error occurred when adding this mod";
+                Bot.LOGGER.error("Error when adding mod {}", this);
+            }
+            return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(message, channel));
+        } catch (IllegalStateException e) {
+            return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(e.getMessage(), channel));
         }
     }
 
@@ -94,8 +101,19 @@ public class ConfirmationListener extends EventListener<ReactionAddEvent> {
         }
 
         // Otherwise, it has to be an x
-        toDelete.remove();
-        return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("Removed **%s** (abbreviated as `%s`) from the mods list. Please mark for translation.",
-                toDelete.getName(), toDelete.getAbbrv()), channel));
+        boolean success = toDelete.remove();
+        return event.getChannel().flatMap(channel -> {
+            String message;
+            if (success) {
+                message = String.format(
+                        "Removed **%s** (abbreviated as `%s`) from the mods list. Please mark for translation.",
+                        toDelete.getName(), toDelete.getAbbrv());
+                Bot.LOGGER.info("Removed mod {} from mods list.", this);
+            } else {
+                message = "An error occurred when deleting this mod.";
+                Bot.LOGGER.error("Error when deleting mod {}", this);
+            }
+            return MessageUtil.sendMessage(message, channel);
+        });
     }
 }

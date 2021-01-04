@@ -28,6 +28,7 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.object.entity.channel.MessageChannel;
+import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.rest.util.Permission;
 import me.sizableshrimp.jsb.Bot;
 import me.sizableshrimp.jsb.api.EventListener;
@@ -46,6 +47,7 @@ import java.util.regex.Pattern;
 public class WikilinkListener extends EventListener<MessageCreateEvent> {
     private static final String LEGAL_TITLE_CHARS = "[ %!\"$&'()*,\\-./0-9:;=?@A-Z\\\\^_`a-z~\\x80-\\xFF+]";
     private static final Pattern WIKILINK = Pattern.compile("\\[\\[(" + LEGAL_TITLE_CHARS + "+)(?:\\|" + LEGAL_TITLE_CHARS + "+)?]]");
+    static final Set<Snowflake> wikilinkMessages = new HashSet<>();
 
     public WikilinkListener(GatewayDiscordClient client, Wiki wiki) {
         super(MessageCreateEvent.class, client, wiki);
@@ -68,7 +70,9 @@ public class WikilinkListener extends EventListener<MessageCreateEvent> {
 
                     return WikilinkCommand.genWikilink(builder, wiki, link);
                 }).zipWith(event.getMessage().getChannel())
-                .flatMap(tuple -> MessageUtil.sendMessage(tuple.getT1().toString(), tuple.getT2()));
+                .flatMap(tuple -> MessageUtil.sendMessage(tuple.getT1().toString(), tuple.getT2()))
+                .flatMap(message -> message.addReaction(ReactionEmoji.unicode("🗑️")).thenReturn(message))
+                .doOnNext(message -> wikilinkMessages.add(message.getId()));
     }
 
     @Override

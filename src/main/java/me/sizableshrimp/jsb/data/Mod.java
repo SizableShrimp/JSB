@@ -89,15 +89,17 @@ public final class Mod {
     }
 
     /**
-     * Adds this {@link Mod} instance to the mods list, if it does not already exist.
+     * Adds this {@link Mod} instance to the mods list, if it does not already
+     * exist.
      *
-     * @return {@code null} if this {@link Mod} instance was successfully added,
-     * otherwise the instance of a conflicting mod that already existed.
+     * @return {@code true} if this {@link Mod} instance was added successfully,
+     *         {@code false} if there was an issue.
+     * @throws IllegalStateException if the mod already exists in the mods list.
      */
-    public Mod add() {
+    public boolean add() {
         Mod conflict = getConflict();
         if (conflict != null)
-            return conflict;
+            throw new IllegalStateException(this.toString() + " already exists in mods list.");
 
         TreeMap<String, Mod> byAbbrv = abbrvData.get(this.wiki);
         Map.Entry<String, Mod> lowerEntry = byAbbrv.lowerEntry(this.abbrv);
@@ -111,9 +113,10 @@ public final class Mod {
         Mod higher = higherEntry == null ? new Mod(null, null, null, null) : higherEntry.getValue();
         for (int i = 2; i < lines.length; i++) {
             String line = lines[i];
-            if (line.indexOf('=') == -1)
+            int end = line.indexOf('=');
+            if (end == -1)
                 continue;
-            String id = line.substring(0, line.indexOf('=')).trim();
+            String id = line.substring(0, end).trim();
             if (id.startsWith("[")) {
                 id = id.substring(2, id.length() - 2);
             }
@@ -126,6 +129,9 @@ public final class Mod {
                 break;
             }
         }
+        if (selected == -1)
+            throw new IllegalStateException("Could not find an insertion point for " + this.toString());
+
         String newLine;
         if (this.hasDistinctLink()) {
             newLine = String.format("    %s = {'%s', '%s', [=[<translate>%s</translate>]=]},", this.abbrv, this.link.replace("'", "\\'"), this.name.replace("'", "\\'"), this.name);
@@ -135,24 +141,30 @@ public final class Mod {
         String insertLine = lines[selected];
         String newText = rawText.replace(insertLine, newLine + '\n' + insertLine);
 
-        this.wiki.edit(MODS_LIST, newText, "Added " + this.abbrv);
+        boolean success = this.wiki.edit(MODS_LIST, newText, "Added " + this.abbrv);
+        if (!success)
+            return false;
+
         joinedData.get(this.wiki).put(this.name.toLowerCase(), this);
         joinedData.get(this.wiki).put(this.abbrv.toLowerCase(), this);
         abbrvData.get(this.wiki).put(this.abbrv.toUpperCase(), this);
 
-        return null; // No conflict
+        return true;
     }
 
     /**
      * Removes this {@link Mod} instance from the mods list, if it exists.
      *
-     * @return {@code true} if this {@link Mod} instance was removed, {@code false} if it did not exist.
+     * @return {@code true} if this {@link Mod} instance was removed successfully,
+     *         {@code false} if there was an issue.
+     * @throws IllegalStateException if the mod does not exist in the if the mod
+     *                               does not exist in the mods list.
      */
     public boolean remove() {
         // Reload the mods just in case it was added recently
         loadMods(this.wiki);
         if (abbrvData.get(this.wiki).get(this.abbrv) == null)
-            return false; // Doesn't exist
+            throw new IllegalStateException(this.toString() + " does not exist in mods list."); // Doesn't exist
 
         String rawText = this.wiki.getPageText(MODS_LIST);
         String[] lines = rawText.split("\n");
@@ -160,9 +172,10 @@ public final class Mod {
 
         for (int i = 2; i < lines.length; i++) {
             String line = lines[i];
-            if (line.indexOf('=') == -1)
+            int end = line.indexOf('=');
+            if (end == -1)
                 continue;
-            String id = line.substring(0, line.indexOf('=')).trim();
+            String id = line.substring(0, end).trim();
             if (id.startsWith("[")) {
                 id = id.substring(2, id.length() - 2);
             }
@@ -171,10 +184,16 @@ public final class Mod {
                 break;
             }
         }
+        if (selected == -1)
+            throw new IllegalStateException("Could not find " + this.toString() + " in mods list.");
+
         String thisLine = lines[selected];
         String newText = rawText.replace('\n' + thisLine, "");
 
-        this.wiki.edit(MODS_LIST, newText, "Removed " + this.abbrv);
+        boolean success = this.wiki.edit(MODS_LIST, newText, "Removed " + this.abbrv);
+        if (!success)
+            return false;
+
         joinedData.get(this.wiki).remove(this.name.toLowerCase());
         joinedData.get(this.wiki).remove(this.abbrv.toLowerCase());
         abbrvData.get(this.wiki).remove(this.abbrv.toUpperCase());
