@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package me.sizableshrimp.jsb.commands;
+package me.sizableshrimp.jsb.commands.utility;
 
 import com.google.gson.JsonObject;
 import discord4j.core.event.domain.message.MessageCreateEvent;

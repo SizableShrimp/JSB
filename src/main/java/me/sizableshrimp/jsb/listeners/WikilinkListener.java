@@ -31,7 +31,7 @@ import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.rest.util.Permission;
 import me.sizableshrimp.jsb.Bot;
 import me.sizableshrimp.jsb.api.EventListener;
-import me.sizableshrimp.jsb.commands.WikilinkCommand;
+import me.sizableshrimp.jsb.commands.utility.WikilinkCommand;
 import me.sizableshrimp.jsb.util.MessageUtil;
 import org.fastily.jwiki.core.Wiki;
 import reactor.core.publisher.Flux;

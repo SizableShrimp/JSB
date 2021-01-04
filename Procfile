@@ -1,1 +1,1 @@
-web: java $JAVA_OPTS -Dserver.port=$PORT -Dspring.output.ansi.enabled=NEVER -jar build/libs/DiscordBot.jar
+web: java $JAVA_OPTS -Dserver.port=$PORT build/libs/DiscordBot.jar

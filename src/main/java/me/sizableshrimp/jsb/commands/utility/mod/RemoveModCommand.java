@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package me.sizableshrimp.jsb.commands;
+package me.sizableshrimp.jsb.commands.utility.mod;
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;

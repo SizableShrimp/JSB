@@ -23,7 +23,6 @@
 package me.sizableshrimp.jsb.api;
 
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.EventDispatcher;
 import org.fastily.jwiki.core.Wiki;
 
 import java.util.Set;
