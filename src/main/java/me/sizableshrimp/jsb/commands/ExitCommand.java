@@ -30,6 +30,7 @@ import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Set;
 
 public class ExitCommand extends AbstractCommand {
@@ -49,9 +50,15 @@ public class ExitCommand extends AbstractCommand {
     }
 
     @Override
+    public List<String> getRequiredRoles() {
+        return List.of("Moderator");
+    }
+
+    @Override
     public Mono<Void> run(CommandContext context, MessageCreateEvent event, Args args) {
-        return requireRole(event, "Moderator")
-                .doOnNext(channel -> Bot.LOGGER.info("Exiting program..."))
-                .flatMap(channel -> sendMessage("Exiting program", channel).then(event.getClient().logout()));
+        return event.getMessage().getChannel().doOnNext(channel -> Bot.LOGGER.info("Exiting program..."))
+                .flatMap(channel -> sendMessage("Exiting program...", channel))
+                .then(event.getClient().logout())
+                .doOnSuccess(v -> System.exit(0));
     }
 }

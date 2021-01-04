@@ -76,7 +76,8 @@ public final class Language {
      * https://www.mediawiki.org/wiki/API:Siteinfo
      */
     private static final WQuery.QTemplate LANGUAGE_INFO = new WQuery.QTemplate(FL.pMap("action", "query", "meta", "siteinfo", "siprop", "languages"), "query");
-    private static Map<String, Language> languages = null;
+    private static Map<String, Language> codes = null;
+    private static Map<String, Language> joined = null;
 
     private Language(@NonNull String code, @NonNull String autonym, @Nullable String english, @Nullable Direction writingDirection) {
         this.code = code;
@@ -103,27 +104,45 @@ public final class Language {
     }
 
     /**
-     * Get a {@link Language} by its language code (ex. "en").
-     * Returns null if the language code is not valid.
+     * Get a {@link Language} by its language code (ex. "en"). Returns null if the
+     * language code is not valid.
      *
      * @param wiki A {@link Wiki} object to use for requesting the data.
      * @param code A short language code, usually 2 letters (ex. "en", "de", "fr").
      * @return A {@link Language} object, or null if invalid.
+     * @see Language#getByInfo(Wiki, String)
+     * 
      */
     public static Language getByCode(Wiki wiki, String code) {
-        if (languages == null)
-            loadLanguages(wiki);
+        loadLanguages(wiki);
 
-        return languages.get(code);
+        return codes.get(code);
+    }
+
+    /**
+     * Get a {@link Language} by its language code (ex. "de"), language name (ex.
+     * "German"), or autonym (ex. "Deutsch"). Returns null if the language info is
+     * not valid.
+     *
+     * @param wiki A {@link Wiki} object to use for requesting the data.
+     * @param info A language code, language name, or autonym.
+     * @return A {@link Language} object, or null if invalid.
+     * @see Language#getByCode(Wiki, String)
+     * 
+     */
+    public static Language getByInfo(Wiki wiki, String info) {
+        loadLanguages(wiki);
+
+        return joined.get(info.toLowerCase());
     }
 
     private static void loadLanguages(Wiki wiki) {
-        if (languages != null)
+        if (codes != null)
             return;
-        languages = new HashMap<>();
-        if (wiki == null)
-            return;
-        List<JsonObject> languageinfo = WikiUtil.getQueryRepliesAsList(new WQuery(wiki, LANGUAGE_INFO),"languages");
+
+        codes = new HashMap<>();
+        joined = new HashMap<>();
+        List<JsonObject> languageinfo = WikiUtil.getQueryRepliesAsList(new WQuery(wiki, LANGUAGE_INFO), "languages");
         List<JsonObject> englishNames = WikiUtil.getQueryRepliesAsList(new WQuery(wiki, LANGUAGE_INFO).set("siinlanguagecode", "en"), "languages");
 
         parseLanguageInfo(languageinfo, englishNames);
@@ -138,7 +157,8 @@ public final class Language {
             String code = GSONP.getStr(json, "code");
             String autonym = GSONP.getStr(json, "*");
             String english = GSONP.getStr(englishNames.get(i).getAsJsonObject(), "*");
-            languages.put(code, new Language(code, autonym, english, null));
+            Language language = new Language(code, autonym, english, null);
+            add(language);
         }
     }
 
@@ -156,8 +176,18 @@ public final class Language {
         for (Map.Entry<String, JsonElement> entry : overrides.entrySet()) {
             String code = entry.getKey();
             JsonArray json = entry.getValue().getAsJsonArray();
-            languages.put(code, new Language(code, json.get(1).getAsString(), json.get(0).getAsString(), null));
+            Language language = new Language(code, json.get(1).getAsString(), json.get(0).getAsString(), null);
+            add(language);
         }
+    }
+
+    private static void add(Language language) {
+        codes.put(language.getCode(), language);
+        joined.put(language.getCode().toLowerCase(), language);
+        if (!language.getAutonym().isBlank())
+            joined.put(language.getAutonym().toLowerCase(), language);
+        if (language.getEnglish() != null)
+            joined.put(language.getEnglish().toLowerCase(), language);
     }
 
     public boolean hasEnglishTranslation() {
@@ -166,20 +196,20 @@ public final class Language {
         return english != null && !autonym.equals(english) && !english.isEmpty();
     }
 
-    public static Map<String, Language> getAllLanguages(Wiki wiki) {
-        loadLanguages(wiki);
-        return languages;
-    }
+    // public static Map<String, Language> getAllLanguages(Wiki wiki) {
+    //     loadLanguages(wiki);
+    //     return codes;
+    // }
 
-    public static Set<String> flattenTranslationPages(Wiki wiki, Set<String> titles) {
-        return titles.stream()
-                .map(title -> flattenTranslationPage(wiki, title))
-                .collect(Collectors.toSet());
-    }
+    // public static Set<String> flattenTranslationPages(Wiki wiki, Set<String> titles) {
+    //     return titles.stream()
+    //             .map(title -> flattenTranslationPage(wiki, title))
+    //             .collect(Collectors.toSet());
+    // }
 
-    public static String flattenTranslationPage(Wiki wiki, String title) {
-        return Language.getByTitle(wiki, title) == null ? title : title.substring(0, title.lastIndexOf('/'));
-    }
+    // public static String flattenTranslationPage(Wiki wiki, String title) {
+    //     return Language.getByTitle(wiki, title) == null ? title : title.substring(0, title.lastIndexOf('/'));
+    // }
 
     @NonNull
     public String getCode() {

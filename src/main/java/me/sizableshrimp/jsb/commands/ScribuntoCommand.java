@@ -22,7 +22,6 @@
 
 package me.sizableshrimp.jsb.commands;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
@@ -34,8 +33,7 @@ import me.sizableshrimp.jsb.data.Scribunto;
 import org.fastily.jwiki.util.GSONP;
 import reactor.core.publisher.Mono;
 
-import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 public class ScribuntoCommand extends AbstractCommand {
@@ -61,44 +59,49 @@ public class ScribuntoCommand extends AbstractCommand {
     }
 
     @Override
+    public List<String> getRequiredRoles() {
+        return List.of("Editor");
+    }
+
+    @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
-        return requireRole(event, "Editor")
-                .flatMap(channel -> {
-                    if (args.getLength() < 2) {
-                        return incorrectUsage(event);
-                    }
-                    String module = args.getArg(0);
-                    String codeToExecute = args.getAfterSpace(2);
-                    Scribunto scrib = Scribunto.runScribuntoCode(context.getWiki(), module, codeToExecute);
-                    JsonObject json = scrib.getResponseJson();
-                    if (json == null) {
-                        return sendMessage("`" + module + "` does not exist", channel);
-                    }
+        if (args.getLength() < 2) {
+            return incorrectUsage(event);
+        }
 
-                    String type = GSONP.getStr(json, "type");
-                    if ("normal".equals(type)) {
-                        String print = GSONP.getStr(json, "print");
-                        String ret = GSONP.getStr(json, "return");
+        return event.getMessage().getChannel().flatMap(channel -> {
+            String module = args.getArg(0);
+            String codeToExecute = args.getAfterSpace(1);
+            Scribunto scrib = Scribunto.runScribuntoCode(context.getWiki(), module, codeToExecute);
+            JsonObject json = scrib.getResponseJson();
+            if (json == null) {
+                return sendMessage("`" + module + "` does not exist", channel);
+            }
 
-                        StringBuilder builder = new StringBuilder();
-                        if (print != null && !print.isEmpty()) {
-                            // Print values returned from the API should already have \n appended.
-                            builder.append("Logs:\n").append(print);
-                        }
-                        if (ret != null && !ret.isEmpty()) {
-                            builder.append("Returned value: ").append(ret);
-                        } else {
-                            builder.append("No value was returned from the module.");
-                        }
-                        return sendMessage("```lua\n" + builder.toString() + "```", channel);
-                    } else if ("error".equals(type)) {
-                        return sendMessage("An error occurred: " + printJson(json), channel);
-                    } else if (type == null) {
-                        return sendMessage("Type was null: " + printJson(json), channel);
-                    } else {
-                        return sendMessage("Unknown type value \"" + type + "\" for JSON: " + printJson(json), channel);
-                    }
-                });
+            String type = GSONP.getStr(json, "type");
+            if ("normal".equals(type)) {
+                String print = GSONP.getStr(json, "print");
+                String ret = GSONP.getStr(json, "return");
+
+                StringBuilder builder = new StringBuilder();
+                if (print != null && !print.isEmpty()) {
+                    // Print values returned from the API should already have \n appended.
+                    builder.append("Logs:\n").append(print);
+                }
+                if (ret != null && !ret.isEmpty()) {
+                    builder.append("Returned value: ").append(ret);
+                } else {
+                    builder.append("No value was returned from the module.");
+                }
+                return sendMessage("```lua\n" + builder.toString() + "```", channel);
+            } else if ("error".equals(type)) {
+                return sendMessage("An error occurred: " + printJson(json), channel);
+            } else if (type == null) {
+                return sendMessage("Type was null: " + printJson(json), channel);
+            } else {
+                return sendMessage("Unknown type value \"" + type + "\" for JSON: " + printJson(json), channel);
+            }
+        });
     }
 
     private String printJson(JsonObject json) {

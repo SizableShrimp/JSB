@@ -24,30 +24,30 @@ package me.sizableshrimp.jsb.commands;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import me.sizableshrimp.jsb.util.WikiUtil;
 import me.sizableshrimp.jsb.api.AbstractCommand;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
-import org.fastily.jwiki.core.Wiki;
+import me.sizableshrimp.jsb.data.Language;
 import reactor.core.publisher.Mono;
 
 import java.util.Set;
 
-public class WikilinkCommand extends AbstractCommand {
+public class GetLanguageCommand extends AbstractCommand {
     @Override
     public CommandInfo getInfo() {
-        return new CommandInfo(this, "%cmdname% <page>", "Provides a link to the page and states whether it exists.");
+        return new CommandInfo(this, "%cmdname% <language info>",
+                "Get a language using its language code, language name, or localized language name and display information about it.");
     }
 
     @Override
     public String getName() {
-        return "wikilink";
+        return "getlang";
     }
 
     @Override
     public Set<String> getAliases() {
-        return Set.of("wl");
+        return Set.of("getlanguage", "lang", "language");
     }
 
     @Override
@@ -56,27 +56,19 @@ public class WikilinkCommand extends AbstractCommand {
             return incorrectUsage(event);
         }
 
-        String link = args.getRawArgs();
-        return Mono.fromSupplier(() -> genWikilink(new StringBuilder(), context.getWiki(), link))
-                .zipWith(event.getMessage().getChannel())
-                .flatMap(tuple -> {
-                    String message = tuple.getT1().toString();
-                    return sendMessage(message, tuple.getT2());
-                });
-    }
+        return event.getMessage().getChannel().flatMap(channel -> {
+            String langInput = args.getRawArgs();
+            Language language = Language.getByInfo(context.getWiki(), langInput);
+            
+            String formatted;
+            if (language != null) {
+                formatted = String.format( "**%s** has a language code of `%s` and is called **%s** in its own language.",
+                        language.getEnglish(), language.getCode(), language.getAutonym());
+            } else {
+                formatted = String.format("A language could not be found with the info `%s`.", langInput);
+            }
 
-    public static StringBuilder genWikilink(StringBuilder builder, Wiki wiki, String link) {
-        String baseUrl = WikiUtil.getBaseArticleUrl(wiki);
-        String url = WikiUtil.getWikiPageUrl(wiki, link);
-        if (url == null) {
-            return builder;
-        }
-
-        if (url.startsWith(baseUrl) && !wiki.exists(link)) {
-            return builder.append("The page **").append(link).append("** does not exist. Create it here: <")
-                    .append(WikiUtil.getWikiPageUrl(wiki, link)).append(">\n");
-        }
-
-        return builder.append(WikiUtil.getWikiPageUrl(wiki, link)).append('\n');
+            return sendMessage(formatted, channel);
+        });
     }
 }

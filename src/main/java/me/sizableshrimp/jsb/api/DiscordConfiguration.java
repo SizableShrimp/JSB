@@ -26,30 +26,45 @@ import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
+import discord4j.rest.util.Image;
+import discord4j.rest.util.Image.Format;
 import me.sizableshrimp.jsb.Bot;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.function.Consumer;
 
 public class DiscordConfiguration {
     private DiscordConfiguration() {}
 
     /**
-     * Returns a {@link Mono} that signals completion when all shards have disconnected.
+     * Returns a {@link Mono} that signals completion when all shards have
+     * disconnected.
      *
-     * @param token The token of the discord bot.
-     * @param consumer A consumer to use the joined {@link GatewayDiscordClient} containing all shards immediately after login.
-     * @return A {@link Mono} that signals completion when all shards have disconnected.
+     * @param token    The token of the discord bot.
+     * @param consumer A consumer to use the joined {@link GatewayDiscordClient}
+     *                 containing all shards immediately after login.
+     * @return A {@link Mono} that signals completion when all shards have
+     *         disconnected.
      */
     public static Mono<Void> login(String token, Consumer<GatewayDiscordClient> consumer) {
-        return DiscordClient.create(token)
-                .gateway()
-                .setInitialStatus(client -> Presence.online(Activity.watching(Bot.getConfig().getPrefix() + "help for help")))
+        byte[] imageBytes = null;
+        try {
+            imageBytes = DiscordConfiguration.class.getResourceAsStream("/JSB.png").readAllBytes();
+        } catch (IOException e) {
+            Bot.LOGGER.error("Could not read avatar image file. Falling back to current avatar.", e);
+        }
+        Image image = imageBytes == null ? null : Image.ofRaw(imageBytes, Format.PNG);
+
+        return DiscordClient.create(token).gateway()
+                .setInitialStatus(
+                        client -> Presence.online(Activity.watching(Bot.getConfig().getPrefix() + "help for help")))
                 .withGateway(client -> {
+                    if (image != null)
+                        client.edit(u -> u.setAvatar(image));
                     consumer.accept(client);
 
                     return client.onDisconnect();
                 });
     }
 }
-

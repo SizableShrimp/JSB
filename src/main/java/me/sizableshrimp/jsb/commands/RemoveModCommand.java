@@ -34,6 +34,7 @@ import me.sizableshrimp.jsb.data.Mod;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,10 +44,9 @@ public class RemoveModCommand extends AbstractCommand {
 
     @Override
     public CommandInfo getInfo() {
-        return new CommandInfo(this, "%cmdname% <mod name|mod abbreviation>",
-                """
-                        Removes a mod from the mod list which takes either the mod abbreviation or unlocalized mod name.
-                        """);
+        return new CommandInfo(this, "%cmdname% <mod name|mod abbreviation>", """
+                Removes a mod from the mod list which takes either the mod abbreviation or unlocalized mod name.
+                """);
     }
 
     @Override
@@ -60,30 +60,40 @@ public class RemoveModCommand extends AbstractCommand {
     }
 
     @Override
+    public List<String> getRequiredRoles() {
+        return List.of("Editor");
+    }
+
+    @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         if (args.getLength() < 1) {
             return incorrectUsage(event);
         }
 
-        return requireRole(event, "Editor")
-                .flatMap(channel -> {
-                    Mod toDelete = Mod.getMod(context.getWiki(), args.getArgRange(0));
-                    if (toDelete == null) {
-                        return sendMessage("That mod doesn't exist!", channel);
-                    }
+        return event.getMessage().getChannel().flatMap(channel -> {
+            Mod toDelete = Mod.getByInfo(context.getWiki(), args.getRawArgs());
+            if (toDelete == null) {
+                return sendMessage("That mod doesn't exist!", channel);
+            }
 
-                    Mono<Message> confirm;
-                    if (toDelete.hasDistinctLink()) {
-                        confirm = sendMessage(String.format("Do you want to delete the mod named **%s** with abbreviation `%s` and link `%s` from the list? " + REACT_WITH,
-                                toDelete.getName(), toDelete.getAbbrv(), toDelete.getUrlLink()), channel);
-                    } else {
-                        confirm = sendMessage(String.format("Do you want to delete the mod named **%s** with abbreviation `%s` from the list? " + REACT_WITH,
-                                toDelete.getName(), toDelete.getAbbrv()), channel);
-                    }
-                    return confirm.doOnNext(m -> awaitingConfirmation.put(m.getId(), new Confirmation(event.getMessage().getAuthor().get().getId(), m.getId(), toDelete)))
-                            .flatMap(m -> m.addReaction(ReactionEmoji.unicode("❌")).thenReturn(m))
-                            .flatMap(m -> m.addReaction(ReactionEmoji.unicode("\uD83D\uDDD1")).thenReturn(m));
-                });
+            Mono<Message> confirm;
+            if (toDelete.hasDistinctLink()) {
+                confirm = sendMessage(String.format(
+                        "Do you want to delete the mod named **%s** with abbreviation `%s` and link `%s` from the list? "
+                                + REACT_WITH,
+                        toDelete.getName(), toDelete.getAbbrv(), toDelete.getUrlLink()), channel);
+            } else {
+                confirm = sendMessage(String
+                        .format("Do you want to delete the mod named **%s** with abbreviation `%s` from the list? "
+                                + REACT_WITH, toDelete.getName(), toDelete.getAbbrv()),
+                        channel);
+            }
+            return confirm
+                    .doOnNext(m -> awaitingConfirmation.put(m.getId(),
+                            new Confirmation(event.getMessage().getAuthor().get().getId(), m.getId(), toDelete)))
+                    .flatMap(m -> m.addReaction(ReactionEmoji.unicode("❌")).thenReturn(m))
+                    .flatMap(m -> m.addReaction(ReactionEmoji.unicode("\uD83D\uDDD1")).thenReturn(m));
+        });
     }
 
     public static final class Confirmation {

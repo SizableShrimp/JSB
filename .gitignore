@@ -9,3 +9,10 @@
 # IntelliJ IDEA
 *.iml
 /.idea
+
+# VS Code
+.vscode
+.classpath
+.project
+.settings
+/bin

@@ -25,17 +25,23 @@ package me.sizableshrimp.jsb.args;
 import java.util.Arrays;
 
 public final class Args {
-    private final String raw;
     private final String name;
+    private final String raw;
     private final String[] args;
 
-    Args(String raw, String name, String[] args) {
-        this.raw = raw;
+    Args(String name, String raw, String[] args) {
         this.name = name;
+        this.raw = raw;
         this.args = args;
     }
 
     public String getArg(int index) {
+        return args[index];
+    }
+
+    public String getArgNullable(int index) {
+        if (index < 0 || index >= getLength())
+            return null;
         return args[index];
     }
 
@@ -54,17 +60,15 @@ public final class Args {
         return String.join(" ", Arrays.copyOfRange(args, startInclusive, endExclusive));
     }
 
-    public String getArgNullable(int index) {
-        if (index < 0 || index >= getLength())
-            return null;
-        return args[index];
-    }
-
     /**
-     * Returns the index right after the space after skipping the supplied amount of spaces.
+     * Uses {@link #getRawArgs()} as a base string. Starting at the start of the
+     * string, skips {@code spaces} number of spaces and then returns the remaining
+     * substring from the index to the end of the string.
      *
-     * @param spaces A number 1 or greater.
-     * @return A substring starting from index right after the number of spaces has been passed and going until the end of the string.
+     * @param spaces A number 0 or greater where 0 means the whole string.
+     * @return a substring starting from the index after {@code spaces} number of
+     *         spaces has been passed from index 0 and continuing to the end of the
+     *         string.
      */
     public String getAfterSpace(int spaces) {
         int result = 0;
@@ -79,17 +83,26 @@ public final class Args {
         return raw.substring(result);
     }
 
+    /**
+     * Uses {@link #getRawArgs()} as a base string. Starting at the end of the
+     * string, skips {@code spaces} number of spaces and then returns the remaining
+     * substring from the index to the end of the string.
+     *
+     * @param spaces A number 0 or greater where 0 means an empty string.
+     * @return a substring starting from the index after {@code spaces} number of
+     *         spaces has been passed from the right end of the string and
+     *         continuing to the end of the string.
+     */
     public String getBeforeSpace(int spaces) {
-        int result = raw.length() - 1;
+        int result = raw.length();
 
         for (int i = 0; i < spaces; i++) {
-            result = raw.lastIndexOf(' ', result);
+            result = raw.lastIndexOf(' ', result - 1);
             if (result == -1)
                 throw new IllegalStateException("Too many spaces");
-            result -= 1;
         }
 
-        return raw.substring(result + 2);
+        return raw.substring(result);
     }
 
     /**
@@ -105,7 +118,12 @@ public final class Args {
         return name;
     }
 
-    public String getRaw() {
+    /**
+     * Get the raw arguments joined by a space, excluding the {@code name}.
+     *
+     * @return the raw arguments joined by a space.
+     */
+    public String getRawArgs() {
         return raw;
     }
 }

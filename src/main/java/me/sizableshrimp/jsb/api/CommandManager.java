@@ -24,6 +24,7 @@ package me.sizableshrimp.jsb.api;
 
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.entity.Role;
 import discord4j.core.object.entity.channel.MessageChannel;
 import me.sizableshrimp.jsb.args.Args;
 import me.sizableshrimp.jsb.args.ArgsProcessor;
@@ -34,9 +35,11 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class CommandManager {
     protected static final Logger LOGGER = LoggerFactory.getLogger(CommandManager.class);
@@ -61,24 +64,19 @@ public class CommandManager {
         if (args == null) {
             return Mono.empty();
         }
+        Args finalArgs = args;
 
         Command command = commandMap.get(args.getName());
-
-        // // Try getting a command from another condition
-        // if (command == null) {
-        //     command = commands.stream()
-        //             .filter(cmd -> cmd.isCommand(event.getMessage()))
-        //             .findAny().orElse(null);
-        // }
 
         if (command == null) {
             return Mono.empty();
         }
 
-        return event.getMessage().getChannel()
-                .flatMap(MessageChannel::type)
-                .then(command.run(new CommandContext(this, wiki), event, args).then())
-                .onErrorResume(NoPermissionException.class, noperms -> event.getMessage().getChannel().flatMap(channel -> MessageUtil.sendMessage(noperms.getMessage(), channel)).then());
+        return event.getMessage().getChannel().flatMap(MessageChannel::type)
+                .then(requireRoles(event, command.getRequiredRoles()))
+                .flatMap(b -> command.run(new CommandContext(this, wiki), event, finalArgs)).then()
+                .onErrorResume(NoPermissionException.class, noperms -> event.getMessage().getChannel()
+                        .flatMap(channel -> MessageUtil.sendMessage(noperms.getMessage(), channel)).then());
     }
 
     public void loadCommands() {
@@ -106,5 +104,15 @@ public class CommandManager {
 
     public Set<Command> getCommands() {
         return this.commands;
+    }
+
+    private static Mono<Boolean> requireRoles(MessageCreateEvent event, List<String> requiredRoles) {
+        if (requiredRoles.isEmpty())
+            return Mono.just(true);
+
+        return Mono.justOrEmpty(event.getMember())
+                .flatMap(m -> m.getRoles().map(Role::getName).collect(Collectors.toSet())
+                        .map(roles -> roles.containsAll(requiredRoles)))
+                .filter(b -> b).switchIfEmpty(Mono.error(() -> new NoPermissionException(requiredRoles)));
     }
 }

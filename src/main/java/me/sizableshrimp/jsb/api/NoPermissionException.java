@@ -22,18 +22,38 @@
 
 package me.sizableshrimp.jsb.api;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public class NoPermissionException extends Exception {
     private static final Set<Character> VOWELS = Set.of('a', 'e', 'i', 'o', 'u');
-    private final String role;
+    private final List<String> roles;
 
-    public NoPermissionException(String role) {
-        super(String.format("You must be %s `%s` to execute this command!", VOWELS.contains(Character.toLowerCase(role.charAt(0))) ? "an" : "a", role));
-        this.role = role;
+    public NoPermissionException(List<String> roles) {
+        super(format(roles));
+        this.roles = roles;
     }
 
-    public String getRole() {
-        return role;
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    private static String format(List<String> roles) {
+        List<String> formatted = new ArrayList<>();
+
+        for (int i = 0; i < roles.size(); i++) {
+            String role = roles.get(i);
+            String article = VOWELS.contains(Character.toLowerCase(role.charAt(0))) ? "an" : "a";
+            if (i == roles.size() - 1 && i > 0) {
+                article = "and " + article;
+            }
+            formatted.add(article + " `" + role + "`");
+        }
+
+        String joined = formatted.size() == 2
+                ? formatted.get(0) + " " + formatted.get(1)
+                : String.join(", ", formatted);
+        return String.format("You must be %s to execute this command!", joined);
     }
 }

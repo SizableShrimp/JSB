@@ -66,7 +66,8 @@ public final class Mod {
      */
     public String getLocalized(Language lang) {
         String langCode = lang == null ? "en" : lang.getCode();
-        return GSONP.getStr(Scribunto.runScribuntoCode(wiki, Mod.MODS_LIST + langCode, "p.byAbbrv['" + abbrv + "']").getReturnJson().getAsJsonObject(), "localized");
+        JsonElement returnJson = Scribunto.runScribuntoCode(wiki, Mod.MODS_LIST + '/' + langCode, "p.byAbbrv['" + abbrv + "']").getReturnJson();
+        return returnJson == null ? null : GSONP.getStr(returnJson.getAsJsonObject(), "localized");
     }
 
     /**
@@ -182,15 +183,16 @@ public final class Mod {
     }
 
     /**
-     * Get a {@link Mod} by its unlocalized mod name or abbreviation, e.g. "Crop Dusting" or "CD".
-     * This method also converts all names to lowercase since no names should conflict anyways.
-     * This method will return null if the JSON from Scribunto Console API is null.
+     * Get a {@link Mod} by its unlocalized mod name or abbreviation, e.g. "Crop
+     * Dusting" or "CD". This method also converts all names to lowercase since no
+     * names should conflict anyways. This method will return null if the JSON from
+     * Scribunto Console API is null OR if the mod does not exist.
      *
      * @param wiki A {@link Wiki} object to use for requesting the data.
      * @param modInfo The unlocalized mod name or abbreviation, case insensitive.
      * @return A {@link Mod} object.
      */
-    public static Mod getMod(Wiki wiki, String modInfo) {
+    public static Mod getByInfo(Wiki wiki, String modInfo) {
         Map<String, Mod> joinedMods = joinedData.get(wiki);
         if (joinedMods == null)
             joinedMods = loadMods(wiki);

@@ -24,6 +24,7 @@ package me.sizableshrimp.jsb.commands;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.MessageChannel;
 import me.sizableshrimp.jsb.api.AbstractCommand;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
@@ -58,29 +59,44 @@ public class GetModCommand extends AbstractCommand {
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
-            String langInput = args.getLength() == 1 ? "" : args.getBeforeSpace(1);
+            String modInput = args.getRawArgs();
+            Mod mod = Mod.getByInfo(context.getWiki(), modInput);
+            if (mod != null) {
+                return formatModMessage(channel, mod, null);
+            } else if (args.getLength() == 1) {
+                return formatModDoesntExistMessage(channel, modInput);
+            }
+
+            String langInput = args.getArgRange(args.getLength() - 1);
             Language language = Language.getByCode(context.getWiki(), langInput);
-
-            String modInput = args.getLength() == 1 ? args.getArg(0) : args.getArgRange(0, args.getLength() - 1);
-            Mod mod = Mod.getMod(context.getWiki(), modInput);
-
-            // This code allows users to get a mod with spaces so long as there is no language.
-            if (language == null && mod == null && !langInput.isBlank()) {
-                modInput = modInput + ' ' + langInput;
-                mod = Mod.getMod(context.getWiki(), modInput);
-            } else if (!langInput.isBlank() && language == null) {
-                // If we already found the mod and langInput is not empty and the language is null, it is an invalid language.
+            if (language == null) {
+                // Invalid if language is null and the current mod is null
                 return sendMessage(String.format("The language specified (%s) does not exist.", langInput), channel);
             }
-            if (mod == null)
-                return sendMessage(String.format("The mod specified (**%s**) does not exist.", modInput), channel);
 
-            String link = '<' + mod.getUrlLink() + '>';
+            modInput = args.getArgRange(0, args.getLength() - 1);
+            mod = Mod.getByInfo(context.getWiki(), modInput);
+            if (mod == null) {
+                return formatModDoesntExistMessage(channel, modInput);
+            }
 
-            String localized = language == null ? "" : String.format("%nThe localized name in %s is %s.", language.getEnglish(), mod.getLocalized(language));
-            String formatted = String.format("**%s** (abbreviated as `%s`) can be found at %s.%s", mod.getName(), mod.getAbbrv(), link, localized);
-
-            return sendMessage(formatted, channel);
+            return formatModMessage(channel, mod, language);
         });
+    }
+
+    private Mono<Message> formatModDoesntExistMessage(MessageChannel channel, String modInput) {
+        return sendMessage(String.format("The mod specified (**%s**) does not exist.", modInput), channel);
+    }
+
+    private Mono<Message> formatModMessage(MessageChannel channel, Mod mod, Language language) {
+        String link = '<' + mod.getUrlLink() + '>';
+        String formatted = String.format("**%s** (abbreviated as `%s`) can be found at %s.", mod.getName(), mod.getAbbrv(), link);
+
+        if (language != null) {
+            String localized = String.format("The localized name in %s is %s.", language.getEnglish(), mod.getLocalized(language));
+            formatted = formatted + '\n' + localized;
+        }
+
+        return sendMessage(formatted, channel);
     }
 }

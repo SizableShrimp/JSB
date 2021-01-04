@@ -34,7 +34,7 @@ import me.sizableshrimp.jsb.data.Mod;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
-import java.util.Locale;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -45,12 +45,11 @@ public class AddModCommand extends AbstractCommand {
 
     @Override
     public CommandInfo getInfo() {
-        return new CommandInfo(this, "%cmdname% <mod abbreviation> <mod name> [mod page]",
-                """
-                        Adds a mod to the mod list which takes a mod abbreviation and the unlocalized mod name.
-                        Optionally takes a mod page link if it differs from the unlocalized mod name.
-                        Wrap any arguments with spaces in quotes.
-                        """);
+        return new CommandInfo(this, "%cmdname% <mod abbreviation> <mod name> [mod page]", """
+                Adds a mod to the mod list which takes a mod abbreviation and the unlocalized mod name.
+                Optionally takes a mod page link if it differs from the unlocalized mod name.
+                Wrap any arguments with spaces in quotes.
+                """);
     }
 
     @Override
@@ -64,41 +63,54 @@ public class AddModCommand extends AbstractCommand {
     }
 
     @Override
+    public List<String> getRequiredRoles() {
+        return List.of("Editor");
+    }
+
+    @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         if (args.getLength() < 2 || args.getLength() > 3) {
             return incorrectUsage(event);
         }
 
-        return requireRole(event, "Editor")
-                .flatMap(channel -> {
-                    String modAbbrv = args.getArg(0).toUpperCase();
-                    String modName = args.getArg(1);
-                    String modPage = args.getArgNullable(2);
-                    if (!CHARACTERS.matcher(modAbbrv).matches()) {
-                        return sendMessage("Abbreviations that are not purely alphanumeric are not supported for technical reasons.", channel);
-                    }
-                    if (Character.isDigit(modAbbrv.charAt(0))) {
-                        return sendMessage("Mod abbreviation cannot start with a number!", channel);
-                    }
+        return event.getMessage().getChannel().flatMap(channel -> {
+            String modAbbrv = args.getArg(0).toUpperCase();
+            String modName = args.getArg(1);
+            String modPage = args.getArgNullable(2);
+            if (!CHARACTERS.matcher(modAbbrv).matches()) {
+                return sendMessage(
+                        "Abbreviations that are not purely alphanumeric are not supported for technical reasons.",
+                        channel);
+            }
+            if (Character.isDigit(modAbbrv.charAt(0))) {
+                return sendMessage("Mod abbreviation cannot start with a number!", channel);
+            }
 
-                    Mod newMod = new Mod(context.getWiki(), modAbbrv, modName, modPage);
-                    Mod conflict = newMod.getConflict();
-                    if (conflict != null) {
-                        return sendMessage(String.format("This mod abbreviation already exists as **%s** with abbreviation `%s`!", conflict.getName(), conflict.getAbbrv()), channel);
-                    } else {
-                        Mono<Message> confirm;
-                        if (newMod.hasDistinctLink()) {
-                            confirm = sendMessage(String.format("Do you want to add a new mod to the list named **%s** with abbreviation `%s` and link `%s`? Please react with ✅ for yes or ❌ for no.",
-                                    newMod.getName(), newMod.getAbbrv(), newMod.getUrlLink()), channel);
-                        } else {
-                            confirm = sendMessage(String.format("Do you want to add a new mod to the list named **%s** with abbreviation `%s`? Please react with ✅ for yes or ❌ for no.",
-                                    newMod.getName(), newMod.getAbbrv()), channel);
-                        }
-                        return confirm.doOnNext(m -> awaitingConfirmation.put(m.getId(), new Confirmation(event.getMessage().getAuthor().get().getId(), m.getId(), newMod)))
-                                .flatMap(m -> m.addReaction(ReactionEmoji.unicode("✅")).thenReturn(m))
-                                .flatMap(m -> m.addReaction(ReactionEmoji.unicode("❌")).thenReturn(m));
-                    }
-                });
+            Mod newMod = new Mod(context.getWiki(), modAbbrv, modName, modPage);
+            Mod conflict = newMod.getConflict();
+            if (conflict != null) {
+                return sendMessage(
+                        String.format("This mod abbreviation already exists as **%s** with abbreviation `%s`!",
+                                conflict.getName(), conflict.getAbbrv()),
+                        channel);
+            } else {
+                Mono<Message> confirm;
+                if (newMod.hasDistinctLink()) {
+                    confirm = sendMessage(String.format(
+                            "Do you want to add a new mod to the list named **%s** with abbreviation `%s` and link `%s`? Please react with ✅ for yes or ❌ for no.",
+                            newMod.getName(), newMod.getAbbrv(), newMod.getUrlLink()), channel);
+                } else {
+                    confirm = sendMessage(String.format(
+                            "Do you want to add a new mod to the list named **%s** with abbreviation `%s`? Please react with ✅ for yes or ❌ for no.",
+                            newMod.getName(), newMod.getAbbrv()), channel);
+                }
+                return confirm
+                        .doOnNext(m -> awaitingConfirmation.put(m.getId(),
+                                new Confirmation(event.getMessage().getAuthor().get().getId(), m.getId(), newMod)))
+                        .flatMap(m -> m.addReaction(ReactionEmoji.unicode("✅")).thenReturn(m))
+                        .flatMap(m -> m.addReaction(ReactionEmoji.unicode("❌")).thenReturn(m));
+            }
+        });
     }
 
     public static final class Confirmation {

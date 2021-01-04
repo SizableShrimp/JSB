@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -64,11 +63,6 @@ public class Bot {
             Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
                 try {
                     client.send(HttpRequest.newBuilder(uri).build(), info -> HttpResponse.BodySubscribers.discarding());
-                    // HttpsURLConnection connection = (HttpsURLConnection) new URL(System.getenv("URL")).openConnection();
-                    // connection.setRequestMethod("GET");
-                    // connection.connect();
-                    // connection.getResponseCode();
-                    // connection.disconnect();
                 } catch (IOException | InterruptedException e) {
                     LOGGER.error("Error while pinging self website.", e);
                 }
@@ -109,9 +103,10 @@ public class Bot {
     }
 
     /**
-     * Setup the wiki instance using a {@link Config} instance and whether to enable jwiki's logger.
-     * Note that this logger can be helpful for debugging, but does not integrate with ANY logging APIs.
-     * Returns null if the config isn't loaded or the api endpoint is invalid.
+     * Setup the wiki instance using a {@link Config} instance and whether to enable
+     * jwiki's logger. Note that this logger can be helpful for debugging, but does
+     * not integrate with ANY logging APIs. Returns null if the config isn't loaded
+     * or the api endpoint is invalid.
      *
      * @param defaultLogger Whether to enable the default logger used by jwiki.
      * @return The created {@link Wiki} instance, or null.
