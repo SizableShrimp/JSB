@@ -69,15 +69,16 @@ public class GetModCommand extends AbstractCommand {
 
             String langInput = args.getArgRange(args.getLength() - 1);
             Language language = Language.getByCode(context.getWiki(), langInput);
-            if (language == null) {
-                // Invalid if language is null and the current mod is null
-                return sendMessage(String.format("The language specified (%s) does not exist.", langInput), channel);
-            }
 
             modInput = args.getArgRange(0, args.getLength() - 1);
             mod = Mod.getByInfo(context.getWiki(), modInput);
-            if (mod == null) {
+
+            if (mod == null && language == null) {
+                return formatModDoesntExistMessage(channel, args.getRawArgs());
+            } else if (mod == null) {
                 return formatModDoesntExistMessage(channel, modInput);
+            } else if (language == null) {
+                return sendMessage(String.format("The language specified (%s) does not exist.", langInput), channel);
             }
 
             return formatModMessage(channel, mod, language);
