@@ -71,7 +71,7 @@ public class RemoveModCommand extends AbstractCommand {
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
-            Mod toDelete = Mod.getByInfo(context.getWiki(), args.getRawArgs());
+            Mod toDelete = Mod.getByInfo(context.getWiki(), args.getJoinedArgs());
             if (toDelete == null) {
                 return sendMessage("That mod doesn't exist!", channel);
             }

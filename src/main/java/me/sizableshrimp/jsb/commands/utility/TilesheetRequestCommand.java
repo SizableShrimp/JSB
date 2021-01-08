@@ -22,11 +22,6 @@
 
 package me.sizableshrimp.jsb.commands.utility;
 
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import me.sizableshrimp.jsb.api.AbstractCommand;
@@ -36,6 +31,11 @@ import me.sizableshrimp.jsb.args.Args;
 import me.sizableshrimp.jsb.data.Mod;
 import me.sizableshrimp.jsb.util.WikiUtil;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TilesheetRequestCommand extends AbstractCommand {
     private static final String REQUESTS_PAGE = "Feed The Beast Wiki:Tilesheet requests";
@@ -73,6 +73,7 @@ public class TilesheetRequestCommand extends AbstractCommand {
 
         return event.getMessage().getChannel().flatMap(channel -> {
             String modInput = args.getArgRange(0, args.getLength() - 1);
+            String user = event.getMessage().getAuthor().get().getUsername();
             String link = args.getArg(args.getLength() - 1);
             Mod mod = Mod.getByInfo(context.getWiki(), modInput);
 
@@ -86,7 +87,7 @@ public class TilesheetRequestCommand extends AbstractCommand {
                         + WikiUtil.getBaseArticleUrl(context.getWiki()) + REQUESTS_PAGE + '>', channel);
 
             String header = "== " + mod.getName() + " ==";
-            String message = String.format("Tilesheet Request for <code>%s</code>. %s ~~~~", mod.getAbbrv(), link);
+            String message = String.format("Tilesheet Request for <code>%s</code> requested by %s. %s ~~~~", mod.getAbbrv(), user, link);
 
             String newText = pageText.replace(matcher.group(), "\n\n" + header + '\n' + message + '\n' + FOOTER);
             boolean success = context.getWiki().edit(REQUESTS_PAGE, newText, "Added tilesheet request for " + mod.getAbbrv());

@@ -19,8 +19,8 @@ repositories {
 }
 
 dependencies {
-    // implementation 'org.fastily:jwiki:1.8.0'
-    implementation 'com.github.SizableShrimp:jwiki:8a8d1db4d0'
+    // implementation 'org.fastily:jwiki:1.8.1'
+    implementation 'com.github.SizableShrimp:jwiki:80af980cef'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.reflections:reflections:0.9.12'
     // compileOnly 'org.projectlombok:lombok:1.18.16'

@@ -59,7 +59,7 @@ public class GetModCommand extends AbstractCommand {
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
-            String modInput = args.getRawArgs();
+            String modInput = args.getJoinedArgs();
             Mod mod = Mod.getByInfo(context.getWiki(), modInput);
             if (mod != null) {
                 return formatModMessage(channel, mod, null);
@@ -74,11 +74,11 @@ public class GetModCommand extends AbstractCommand {
             mod = Mod.getByInfo(context.getWiki(), modInput);
 
             if (mod == null && language == null) {
-                return formatModDoesntExistMessage(channel, args.getRawArgs());
+                return formatModDoesntExistMessage(channel, args.getJoinedArgs());
             } else if (mod == null) {
                 return formatModDoesntExistMessage(channel, modInput);
             } else if (language == null) {
-                return sendMessage(String.format("The language specified (%s) does not exist.", langInput), channel);
+                return sendMessage(String.format("The language specified (`%s`) does not exist.", langInput), channel);
             }
 
             return formatModMessage(channel, mod, language);

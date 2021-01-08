@@ -22,9 +22,12 @@
 
 package me.sizableshrimp.jsb.util;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.rest.util.Permission;
 import reactor.core.publisher.Mono;
 
 import java.util.function.Consumer;
@@ -45,5 +48,13 @@ public final class MessageUtil {
 
     public static Mono<Message> sendEmbed(String message, Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
         return channel.createMessage(m -> m.setContent('\u200B' + message).setEmbed(embed)); // ZWS
+    }
+
+    public static Mono<Boolean> canSendMessages(Message message) {
+        Snowflake id = message.getClient().getSelfId();
+        return message.getChannel()
+                .cast(GuildMessageChannel.class)
+                .flatMap(c -> c.getEffectivePermissions(id))
+                .map(set -> set.contains(Permission.SEND_MESSAGES));
     }
 }

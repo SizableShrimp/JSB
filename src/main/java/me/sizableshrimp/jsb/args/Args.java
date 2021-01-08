@@ -26,13 +26,13 @@ import java.util.Arrays;
 
 public final class Args {
     private final String name;
-    private final String raw;
     private final String[] args;
+    private final String joinedArgs;
 
-    Args(String name, String raw, String[] args) {
+    Args(String name, String[] args) {
         this.name = name;
-        this.raw = raw;
         this.args = args;
+        this.joinedArgs = String.join(" ", args);
     }
 
     public String getArg(int index) {
@@ -61,7 +61,7 @@ public final class Args {
     }
 
     /**
-     * Uses {@link #getRawArgs()} as a base string. Starting at the start of the
+     * Uses {@link #getJoinedArgs()} as a base string. Starting at the start of the
      * string, skips {@code spaces} number of spaces and then returns the remaining
      * substring from the index to the end of the string.
      *
@@ -74,17 +74,17 @@ public final class Args {
         int result = 0;
 
         for (int i = 0; i < spaces; i++) {
-            result = raw.indexOf(' ', result);
+            result = joinedArgs.indexOf(' ', result);
             if (result == -1)
                 throw new IllegalStateException("Too many spaces");
             result += 1;
         }
 
-        return raw.substring(result);
+        return joinedArgs.substring(result);
     }
 
     /**
-     * Uses {@link #getRawArgs()} as a base string. Starting at the end of the
+     * Uses {@link #getJoinedArgs()} as a base string. Starting at the end of the
      * string, skips {@code spaces} number of spaces and then returns the remaining
      * substring from the index to the end of the string.
      *
@@ -94,15 +94,15 @@ public final class Args {
      *         continuing to the end of the string.
      */
     public String getBeforeSpace(int spaces) {
-        int result = raw.length();
+        int result = joinedArgs.length();
 
         for (int i = 0; i < spaces; i++) {
-            result = raw.lastIndexOf(' ', result - 1);
+            result = joinedArgs.lastIndexOf(' ', result - 1);
             if (result == -1)
                 throw new IllegalStateException("Too many spaces");
         }
 
-        return raw.substring(result);
+        return joinedArgs.substring(result);
     }
 
     /**
@@ -119,11 +119,11 @@ public final class Args {
     }
 
     /**
-     * Get the raw arguments joined by a space, excluding the {@code name}.
+     * Gets all arguments joined by a space, excluding the {@code name}.
      *
-     * @return the raw arguments joined by a space.
+     * @return all arguments joined by a space, excluding the {@code name}.
      */
-    public String getRawArgs() {
-        return raw;
+    public String getJoinedArgs() {
+        return joinedArgs;
     }
 }

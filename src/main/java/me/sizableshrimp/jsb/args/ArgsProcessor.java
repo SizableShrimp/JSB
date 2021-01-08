@@ -23,6 +23,7 @@
 package me.sizableshrimp.jsb.args;
 
 import me.sizableshrimp.jsb.Bot;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -87,6 +88,6 @@ public class ArgsProcessor {
         if (current.length() != 0)
             list.add(current.toString()); // Add last arg
 
-        return new Args(list.remove(0).toLowerCase(), String.join(" ", list), list.toArray(String[]::new));
+        return new Args(list.remove(0).toLowerCase(), list.toArray(String[]::new));
     }
 }

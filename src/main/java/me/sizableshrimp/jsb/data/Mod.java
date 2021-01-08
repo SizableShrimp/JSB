@@ -141,7 +141,7 @@ public final class Mod {
         String insertLine = lines[selected];
         String newText = rawText.replace(insertLine, newLine + '\n' + insertLine);
 
-        boolean success = this.wiki.edit(MODS_LIST, newText, "Added " + this.abbrv);
+        boolean success = this.wiki.edit(MODS_LIST, newText, "Added " + this.abbrv + '=' + this.name);
         if (!success)
             return false;
 
@@ -190,7 +190,7 @@ public final class Mod {
         String thisLine = lines[selected];
         String newText = rawText.replace('\n' + thisLine, "");
 
-        boolean success = this.wiki.edit(MODS_LIST, newText, "Removed " + this.abbrv);
+        boolean success = this.wiki.edit(MODS_LIST, newText, "Removed " + this.abbrv + '=' + this.name);
         if (!success)
             return false;
 
@@ -293,7 +293,7 @@ public final class Mod {
      * @return the full path to the mod's page based on the current {@link Config#getApi()}.
      */
     public String getUrlLink() {
-        return WikiUtil.getBaseArticleUrl(this.wiki) + this.link.replace(' ', '_');
+        return WikiUtil.joinBaseArticleWithPage(this.wiki, this.link);
     }
 
     @Override

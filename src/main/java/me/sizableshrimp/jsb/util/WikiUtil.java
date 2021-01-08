@@ -49,12 +49,6 @@ public final class WikiUtil {
 
     private WikiUtil() {}
 
-    //    public static boolean move(Wiki wiki, String fromTitle, String toTile, @Nullable String reason,
-    //                               boolean leaveRedirect) {
-    //        wiki.basicPOST("move", FL.pMap("from", fromTitle, "to", toTile, "reason", reason == null ? "" : reason,
-    //                "noredirect", Boolean.toString(!leaveRedirect)));
-    //    }
-
     /**
      * Run input parse text through {@code action=parse} with the specified {@code contentmodel}.
      * If a content model is not specified, defaults to wikitext.
@@ -155,24 +149,41 @@ public final class WikiUtil {
      * @return a link to the {@code page} specified, or null if it does not exist.
      */
     public static String getWikiPageUrl(Wiki wiki, String page) {
+        page = page.startsWith(":") ? page : ":" + page;
         JsonObject json = WikiUtil.jsonFromResponse(wiki.basicGET("parse", "contentmodel", "wikitext", "wrapoutputclass", "",
                 "disablelimitreport", "true", "text", "[[" + page + "]]")).getAsJsonObject();
         json = json.get("parse").getAsJsonObject();
-        JsonArray localLinks = json.get("links") == null ? new JsonArray() : json.get("links").getAsJsonArray();
-        JsonArray interwikiLinks = json.get("iwlinks") == null ? new JsonArray() : json.get("iwlinks").getAsJsonArray();
+        JsonArray localLinks = getOrDefault(json, "links");
+        JsonArray interwikiLinks = getOrDefault(json, "iwlinks");
+        JsonArray images = getOrDefault(json, "images");
+
+        String result = null;
 
         if (localLinks.size() > 0) {
             JsonObject obj = localLinks.get(0).getAsJsonObject();
-            String link = obj.get("*").getAsString();
-            return getBaseArticleUrl(wiki) + link.replace(' ', '_');
-        }
-
-        if (interwikiLinks.size() > 0) {
+            result = joinBaseArticleWithPage(wiki, obj.get("*").getAsString());
+        } else if (interwikiLinks.size() > 0) {
             JsonObject obj = interwikiLinks.get(0).getAsJsonObject();
-            return obj.get("url").getAsString();
+            result = obj.get("url").getAsString();
+        } else if (images.size() > 0) {
+            String image = images.get(0).getAsString();
+            result = joinBaseArticleWithPage(wiki, image);
         }
 
-        return null;
+        if (result != null) {
+            // Add section link
+            int sectionIndex = page.indexOf('#');
+            if (sectionIndex != -1) {
+                result = result + page.substring(sectionIndex);
+            }
+        }
+
+        return result;
+    }
+
+    private static JsonArray getOrDefault(JsonObject json, String memberName) {
+        JsonElement arr = json.get(memberName);
+        return arr == null ? new JsonArray() : arr.getAsJsonArray();
     }
 
     /**
@@ -190,5 +201,9 @@ public final class WikiUtil {
         base = base.substring(0, base.lastIndexOf('/') + 1); // Include the trailing slash but remove the main page
         baseUrls.put(wiki, base);
         return base;
+    }
+
+    public static String joinBaseArticleWithPage(Wiki wiki, String page) {
+        return getBaseArticleUrl(wiki) + page.replace(' ', '_');
     }
 }

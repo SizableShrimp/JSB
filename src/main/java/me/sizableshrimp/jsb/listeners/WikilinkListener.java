@@ -40,13 +40,13 @@ import reactor.core.publisher.Mono;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class WikilinkListener extends EventListener<MessageCreateEvent> {
-    private static final String LEGAL_TITLE_CHARS = "[ %!\"$&'()*,\\-./0-9:;=?@A-Z\\\\^_`a-z~\\x80-\\xFF+]";
-    private static final Pattern WIKILINK = Pattern.compile("\\[\\[(" + LEGAL_TITLE_CHARS + "+)(?:\\|" + LEGAL_TITLE_CHARS + "+)?]]");
+    // # is not legal, but we need to support section links
+    private static final String LEGAL_CHARS = "[ #%!\"$&'()*,\\-./0-9:;=?@A-Z\\\\^_`a-z~\\x80-\\xFF+]";
+    private static final Pattern WIKILINK = Pattern.compile("\\[\\[(" + LEGAL_CHARS + "+)(?:\\|(.+))?]]");
     static final Set<Snowflake> wikilinkMessages = new HashSet<>();
 
     public WikilinkListener(GatewayDiscordClient client, Wiki wiki) {
@@ -58,19 +58,16 @@ public class WikilinkListener extends EventListener<MessageCreateEvent> {
                 .map(WIKILINK::matcher)
                 .filter(Matcher::find)
                 .flatMap(m -> event.getMessage().getChannel().flatMap(MessageChannel::type).thenReturn(m))
-                .flatMapMany(matcher -> {
-                    Set<MatchResult> matches = new HashSet<>();
-                    do {
-                        matches.add(matcher.toMatchResult());
-                    } while (matcher.find());
-                    return Flux.fromIterable(matches);
-                }).reduce(new StringBuilder(), (builder, m) -> {
-                    String link = m.group(1);
-                    // String display = m.group(2);
+                .map(matcher -> {
+                    StringBuilder builder = new StringBuilder();
 
-                    return WikilinkCommand.genWikilink(builder, wiki, link);
+                    do {
+                        WikilinkCommand.genWikilink(builder, wiki, matcher.group(1));
+                    } while (matcher.find());
+
+                    return builder.toString();
                 }).zipWith(event.getMessage().getChannel())
-                .flatMap(tuple -> MessageUtil.sendMessage(tuple.getT1().toString(), tuple.getT2()))
+                .flatMap(tuple -> MessageUtil.sendMessage(tuple.getT1(), tuple.getT2()))
                 .flatMap(message -> message.addReaction(ReactionEmoji.unicode("🗑️")).thenReturn(message))
                 .doOnNext(message -> wikilinkMessages.add(message.getId()));
     }
@@ -79,19 +76,11 @@ public class WikilinkListener extends EventListener<MessageCreateEvent> {
     protected Mono<Void> execute(Flux<MessageCreateEvent> onEvent) {
         return onEvent
                 .filterWhen(e -> e.getMessage().getChannel().map(c -> c instanceof GuildMessageChannel))
-                .filterWhen(e -> canSendMessages(e.getMessage()))
+                .filterWhen(e -> MessageUtil.canSendMessages(e.getMessage()))
                 .filter(e -> e.getMessage().getAuthor().map(u -> !u.isBot()).orElse(false))
                 .filter(e -> !e.getMessage().getContent().isEmpty())
                 .flatMap(this::genMessage)
                 .onErrorContinue((error, event) -> Bot.LOGGER.error("Wikilink listener had an uncaught exception!", error))
                 .then();
-    }
-
-    private Mono<Boolean> canSendMessages(Message message) {
-        Snowflake id = message.getClient().getSelfId();
-        return message.getChannel()
-                .cast(GuildMessageChannel.class)
-                .flatMap(c -> c.getEffectivePermissions(id))
-                .map(set -> set.asEnumSet().contains(Permission.SEND_MESSAGES));
     }
 }

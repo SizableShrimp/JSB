@@ -76,7 +76,7 @@ public class Bot {
     }
 
     private static boolean loadWiki() {
-        wiki = setupWiki(false);
+        wiki = setupWiki();
         if (wiki == null) {
             LOGGER.error("Failed to login to MediaWiki");
             return false;
@@ -103,15 +103,11 @@ public class Bot {
     }
 
     /**
-     * Setup the wiki instance using a {@link Config} instance and whether to enable
-     * jwiki's logger. Note that this logger can be helpful for debugging, but does
-     * not integrate with ANY logging APIs. Returns null if the config isn't loaded
-     * or the api endpoint is invalid.
+     * Setup the wiki instance using a {@link Config} instance.
      *
-     * @param defaultLogger Whether to enable the default logger used by jwiki.
-     * @return The created {@link Wiki} instance, or null.
+     * @return The created {@link Wiki} instance, or null if an error occurred.
      */
-    private static Wiki setupWiki(boolean defaultLogger) {
+    private static Wiki setupWiki() {
         if (config == null || config.getApi() == null) {
             LOGGER.error("API endpoint is null");
             return null;
@@ -129,7 +125,7 @@ public class Bot {
         return builder
                 .withApiEndpoint(apiEndpoint)
                 .withUserAgent(config.getUserAgent())
-                .withDefaultLogger(defaultLogger)
+                .withPrefixLogging(false)
                 .build();
     }
 

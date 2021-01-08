@@ -57,7 +57,7 @@ public class GetLanguageCommand extends AbstractCommand {
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
-            String langInput = args.getRawArgs();
+            String langInput = args.getJoinedArgs();
             Language language = Language.getByInfo(context.getWiki(), langInput);
             
             String formatted;
