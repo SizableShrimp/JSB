@@ -61,7 +61,7 @@ public class InfoCommand extends AbstractCommand {
 
     private static Consumer<EmbedCreateSpec> getEmbed(String owner) {
         String description = """
-                This bot was built with [Discord4J](https://github.com/Discord4J/Discord4J) and programmed in Java with love.
+                **Java Shrimp Bot** (or JSB) was built with [Discord4J](https://github.com/Discord4J/Discord4J) and programmed in Java with love.
                 """;
 
         return embed -> {
