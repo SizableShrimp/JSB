@@ -22,64 +22,44 @@
 
 package me.sizableshrimp.jsb.listeners;
 
-import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.object.entity.channel.MessageChannel;
-import discord4j.core.object.reaction.ReactionEmoji;
-import me.sizableshrimp.jsb.Bot;
-import me.sizableshrimp.jsb.api.EventListener;
 import me.sizableshrimp.jsb.commands.utility.WikilinkCommand;
 import me.sizableshrimp.jsb.util.MessageUtil;
 import org.fastily.jwiki.core.Wiki;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class WikilinkListener extends EventListener<MessageCreateEvent> {
+public class WikilinkListener extends TrashableMessageListener {
     // # is not legal, but we need to support section links
     private static final String LEGAL_CHARS = "[ #%!\"$&'()*,\\-./0-9:;=?@A-Z\\\\^_`a-z~\\x80-\\xFF+\\w]";
     private static final Pattern WIKILINK = Pattern.compile("\\[\\[(" + LEGAL_CHARS + "+)(?:\\|(.+))?]]", Pattern.UNICODE_CHARACTER_CLASS);
-    static final Set<Snowflake> wikilinkMessages = new HashSet<>();
+    private static final int MAX_LINKS = 5;
 
     public WikilinkListener(GatewayDiscordClient client, Wiki wiki) {
-        super(MessageCreateEvent.class, client, wiki);
+        super(client, wiki);
     }
 
-    private Mono<Message> genMessage(MessageCreateEvent event) {
+    protected Mono<Message> genMessage(MessageCreateEvent event) {
         return Mono.just(event.getMessage().getContent())
+                .filter(m -> !m.contains("```"))
                 .map(WIKILINK::matcher)
                 .filter(Matcher::find)
                 .flatMap(m -> event.getMessage().getChannel().flatMap(MessageChannel::type).thenReturn(m))
                 .map(matcher -> {
                     StringBuilder builder = new StringBuilder();
+                    int i = 0;
 
                     do {
                         WikilinkCommand.genWikilink(builder, wiki, matcher.group(1));
-                    } while (matcher.find());
+                    } while (matcher.find() && i++ < MAX_LINKS);
 
                     return builder.toString();
                 }).zipWith(event.getMessage().getChannel())
-                .flatMap(tuple -> MessageUtil.sendMessage(tuple.getT1(), tuple.getT2()))
-                .flatMap(message -> message.addReaction(ReactionEmoji.unicode("🗑️")).thenReturn(message))
-                .doOnNext(message -> wikilinkMessages.add(message.getId()));
-    }
-
-    @Override
-    protected Mono<Void> execute(Flux<MessageCreateEvent> onEvent) {
-        return onEvent
-                .filterWhen(e -> e.getMessage().getChannel().map(c -> c instanceof GuildMessageChannel))
-                .filterWhen(e -> MessageUtil.canSendMessages(e.getMessage()))
-                .filter(e -> e.getMessage().getAuthor().map(u -> !u.isBot()).orElse(false))
-                .filter(e -> !e.getMessage().getContent().isEmpty())
-                .flatMap(this::genMessage)
-                .onErrorContinue((error, event) -> Bot.LOGGER.error("Wikilink listener had an uncaught exception!", error))
-                .then();
+                .flatMap(tuple -> MessageUtil.sendMessage(tuple.getT1(), tuple.getT2()));
     }
 }

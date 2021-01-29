@@ -24,12 +24,16 @@ package me.sizableshrimp.jsb.commands.utility;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import me.sizableshrimp.jsb.api.AbstractCommand;
+import discord4j.core.object.entity.User;
+import me.sizableshrimp.jsb.Bot;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
 import me.sizableshrimp.jsb.data.Mod;
+import me.sizableshrimp.jsb.util.MessageUtil;
 import me.sizableshrimp.jsb.util.WikiUtil;
+import org.fastily.jwiki.core.AReply;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -38,7 +42,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TilesheetRequestCommand extends AbstractCommand {
-    private static final String REQUESTS_PAGE = "Feed The Beast Wiki:Tilesheet requests";
+    public static final String REQUESTS_PAGE = "Feed The Beast Wiki:Tilesheet requests";
     private static final Pattern PATTERN = Pattern.compile("\\s*<!--Do not edit below this line\\.-->\\n\\{\\{Navbox portals}}\\s*$");
     private static final String FOOTER = "\n\n\n<!--Do not edit below this line.-->\n{{Navbox portals}}";
 
@@ -73,7 +77,6 @@ public class TilesheetRequestCommand extends AbstractCommand {
 
         return event.getMessage().getChannel().flatMap(channel -> {
             String modInput = args.getArgRange(0, args.getLength() - 1);
-            String user = event.getMessage().getAuthor().get().getUsername();
             String link = args.getArg(args.getLength() - 1);
             Mod mod = Mod.getByInfo(context.getWiki(), modInput);
 
@@ -84,19 +87,22 @@ public class TilesheetRequestCommand extends AbstractCommand {
             Matcher matcher = PATTERN.matcher(pageText);
             if (!matcher.find())
                 return sendMessage("**Error:** Could not detect footer on page. Please fix it -> <"
-                        + WikiUtil.getBaseArticleUrl(context.getWiki()) + REQUESTS_PAGE + '>', channel);
+                        + WikiUtil.getBaseWikiPageUrl(context.getWiki(), REQUESTS_PAGE) + '>', channel);
 
             String header = "== " + mod.getName() + " ==";
-            String message = String.format("Tilesheet Request for <code>%s</code> requested by %s. %s ~~~~", mod.getAbbrv(), user, link);
+            User user = event.getMessage().getAuthor().get();
+            String talkMessage = String.format("Tilesheet Request for <code>%s</code> requested by %s. %s ~~~~",
+                    mod.getAbbrv(), MessageUtil.getUsernameDiscriminator(user), link);
 
-            String newText = pageText.replace(matcher.group(), "\n\n" + header + '\n' + message + '\n' + FOOTER);
-            boolean success = context.getWiki().edit(REQUESTS_PAGE, newText, "Added tilesheet request for " + mod.getAbbrv());
+            String newText = pageText.replace(matcher.group(), "\n\n" + header + '\n' + talkMessage + '\n' + FOOTER);
+            AReply reply = context.getWiki().edit(REQUESTS_PAGE, newText, "Added tilesheet request for " + mod.getAbbrv());
 
-            if (success) {
-                return sendMessage("Added tilesheet request for `" + mod.getAbbrv() + "`.", channel);
-            } else {
-                return sendMessage("An error occurred when uploading the text.", channel);
-            }
+            String message = MessageUtil.getMessageFromReply(reply, r -> {
+                Bot.LOGGER.info("Added tilesheet request for {}", mod.getAbbrv());
+                return "Added tilesheet request for `" + mod.getAbbrv() + "`.";
+            }, r -> "adding tilesheet request for " + mod.getAbbrv());
+
+            return sendMessage(message, channel);
         });
     }
 }

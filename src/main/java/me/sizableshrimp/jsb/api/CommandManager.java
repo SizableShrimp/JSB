@@ -92,8 +92,9 @@ public class CommandManager {
     }
 
     private void addCommand(String name, Command command) {
-        if (commandMap.put(name, command) != null) {
-            LOGGER.error("Encountered a duplicate alias \"{}\"", name);
+        Command prev = commandMap.put(name, command);
+        if (prev != null) {
+            LOGGER.error("Encountered a duplicate alias \"{}\" for {} and {}", name, command.getClass(), prev.getClass());
             commandMap.remove(name);
         }
     }

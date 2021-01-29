@@ -45,16 +45,34 @@ public final class Args {
         return args[index];
     }
 
+    public boolean getArgAsBoolean(int index) {
+        return isTrue(getArg(index));
+    }
+
+    public boolean getNullableArgAsBoolean(int index) {
+        return isTrue(getArgNullable(index));
+    }
+
+    private static boolean isTrue(String arg) {
+        return "true".equalsIgnoreCase(arg) || "t".equals(arg) || "1".equalsIgnoreCase(arg);
+    }
+
+    /**
+     * Gets all arguments in a range joined by a space from {@code startInclusive} to the end of the array.
+     *
+     * @param startInclusive A 0-based array index. Must be smaller than the length of the arguments.
+     * @return
+     */
     public String getArgRange(int startInclusive) {
         return getArgRange(startInclusive, args.length);
     }
 
     /**
-     * Gets the arguments in a range joined by a space.
+     * Gets all arguments in a range joined by a space using 0-based indices.
      *
-     * @param startInclusive
-     * @param endExclusive
-     * @return
+     * @param startInclusive A 0-based array index. Must be smaller than {@code endExclusive} but at least 0.
+     * @param endExclusive A 0-based array index. Must be larger or equal to {@code startInclusive} but at least 0.
+     * @return All arguments in this range joined by a space.
      */
     public String getArgRange(int startInclusive, int endExclusive) {
         return String.join(" ", Arrays.copyOfRange(args, startInclusive, endExclusive));
@@ -67,8 +85,8 @@ public final class Args {
      *
      * @param spaces A number 0 or greater where 0 means the whole string.
      * @return a substring starting from the index after {@code spaces} number of
-     *         spaces has been passed from index 0 and continuing to the end of the
-     *         string.
+     * spaces has been passed from index 0 and continuing to the end of the
+     * string.
      */
     public String getAfterSpace(int spaces) {
         int result = 0;
@@ -90,8 +108,8 @@ public final class Args {
      *
      * @param spaces A number 0 or greater where 0 means an empty string.
      * @return a substring starting from the index after {@code spaces} number of
-     *         spaces has been passed from the right end of the string and
-     *         continuing to the end of the string.
+     * spaces has been passed from the right end of the string and
+     * continuing to the end of the string.
      */
     public String getBeforeSpace(int spaces) {
         int result = joinedArgs.length();

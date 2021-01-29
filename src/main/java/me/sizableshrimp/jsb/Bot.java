@@ -22,8 +22,11 @@
 
 package me.sizableshrimp.jsb;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import me.sizableshrimp.jsb.api.DiscordConfiguration;
 import me.sizableshrimp.jsb.api.EventHandler;
+import me.sizableshrimp.jsb.data.Config;
 import okhttp3.HttpUrl;
 import org.fastily.jwiki.core.Wiki;
 import org.slf4j.Logger;
@@ -32,61 +35,45 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
 public class Bot {
+    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final Logger LOGGER = LoggerFactory.getLogger(Bot.class);
     private static Config config;
-    private static Wiki wiki;
     private static long firstOnline;
-    // private static final WQuery.QTemplate SITEINFO = new WQuery.QTemplate(FL.pMap("action", "query", "meta", "siteinfo", "siprop", "general"), "query");
 
     // Examples - https://github.com/fastily/jwiki/wiki/Examples
     public static void main(String[] args) {
         SpringApplication.run(Bot.class, args);
-        boolean heroku = System.getenv("HEROKU") != null;
         // Loads the wiki instance only if the config instance was loaded
-        if (!loadConfig(heroku) || !loadWiki())
+        if (!loadConfig())
+            return;
+        Wiki wiki = loadWiki();
+        if (wiki == null)
             return;
 
-        if (heroku) {
-            HttpClient client = HttpClient.newHttpClient();
-            URI uri = URI.create(System.getenv("URL"));
-            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
-                try {
-                    client.send(HttpRequest.newBuilder(uri).build(), info -> HttpResponse.BodySubscribers.discarding());
-                } catch (IOException | InterruptedException e) {
-                    LOGGER.error("Error while pinging self website.", e);
-                }
-            }, 0, 10, TimeUnit.MINUTES);
-        }
-        DiscordConfiguration.login(config.getBotToken(), client -> {
+        DiscordConfiguration.login(config.getPrefix(), config.getBotToken(), System.getenv("DEBUG") != null, client -> {
             EventHandler handler = new EventHandler(client, wiki);
             handler.register();
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> client.logout().timeout(Duration.ofSeconds(15)).block()));
-        }).subscribe();
+        }).block();
     }
 
-    private static boolean loadWiki() {
-        wiki = setupWiki();
+    private static Wiki loadWiki() {
+        Wiki wiki = setupWiki();
         if (wiki == null) {
-            LOGGER.error("Failed to login to MediaWiki");
-            return false;
+            LOGGER.error("Failed to load wiki instance");
+            return null;
         }
-        LOGGER.info("Logged into MediaWiki as user \"{}\"", wiki.whoami());
-        return true;
+        if (LOGGER.isInfoEnabled() && wiki.whoami() != null)
+            LOGGER.info("Logged into MediaWiki as user \"{}\"", wiki.whoami());
+        return wiki;
     }
 
-    private static boolean loadConfig(boolean heroku) {
+    private static boolean loadConfig() {
         try {
+            boolean heroku = System.getenv("HEROKU") != null;
             if (heroku) {
                 config = Config.loadHeroku();
                 LOGGER.info("Loaded config from Heroku environment variables.");
@@ -138,6 +125,9 @@ public class Bot {
     }
 
     public static void setFirstOnline(long millis) {
+        if (Bot.firstOnline != 0)
+            throw new IllegalStateException("firstOnline already set");
+
         Bot.firstOnline = millis;
     }
 }

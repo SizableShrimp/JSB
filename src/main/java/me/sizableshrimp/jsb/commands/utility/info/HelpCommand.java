@@ -20,14 +20,14 @@
  * SOFTWARE.
  */
 
-package me.sizableshrimp.jsb.commands.utility;
+package me.sizableshrimp.jsb.commands.utility.info;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import me.sizableshrimp.jsb.Bot;
-import me.sizableshrimp.jsb.api.AbstractCommand;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.api.Command;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
@@ -74,13 +74,15 @@ public class HelpCommand extends AbstractCommand {
     }
 
     public static Consumer<EmbedCreateSpec> display(String inputCmd, Command command) {
-        String commandName = command.getClass().getSimpleName().replace("Command", "");
+        String commandName = command.getClass().getSimpleName()
+                .replace("Command", "")
+                .replaceAll("([^A-Z])([A-Z][^A-Z])", "$1 $2")
+                .trim();
         CommandInfo commandInfo = command.getInfo();
 
         String usage = Bot.getConfig().getPrefix() + commandInfo.getUsage(inputCmd);
         String description = commandInfo.getDescription(Bot.getConfig().getPrefix());
         String title = commandName + " Command";
-        String aliases = String.join(", ", commandInfo.getAllNames());
 
         return embed -> {
             embed.setColor(Color.of(255, 175, 175));
@@ -88,7 +90,10 @@ public class HelpCommand extends AbstractCommand {
             embed.addField("Usage", "`" + usage + "`", false);
             embed.addField("Description", description, false);
             if (!commandInfo.getAliases().isEmpty()) {
-                embed.addField("Aliases", aliases, false);
+                embed.addField("Aliases", String.join(", ", commandInfo.getAllNames()), false);
+            }
+            if (!commandInfo.getRequiredRoles().isEmpty()) {
+                embed.addField("Required Roles", String.join(", ", commandInfo.getRequiredRoles()), false);
             }
         };
     }

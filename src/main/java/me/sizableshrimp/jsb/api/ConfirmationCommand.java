@@ -22,31 +22,25 @@
 
 package me.sizableshrimp.jsb.api;
 
-import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.channel.MessageChannel;
-import discord4j.core.spec.EmbedCreateSpec;
-import me.sizableshrimp.jsb.commands.utility.HelpCommand;
-import me.sizableshrimp.jsb.util.MessageUtil;
+import discord4j.core.object.reaction.ReactionEmoji;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
+import me.sizableshrimp.jsb.data.BaseConfirmationContext;
 import reactor.core.publisher.Mono;
 
-import java.util.function.Consumer;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 
-public abstract class AbstractCommand implements Command {
-    // Helper functions
-    protected final Mono<Message> incorrectUsage(MessageCreateEvent event) {
-        return event.getMessage().getChannel().flatMap(c -> sendEmbed(HelpCommand.display(event, this), c));
+public abstract class ConfirmationCommand<C extends BaseConfirmationContext> extends AbstractCommand {
+    protected final ConfirmationManager<C> confirmationManager;
+
+    protected ConfirmationCommand(Map<ReactionEmoji, BiFunction<C, ReactionAddEvent, Mono<?>>> reactionsMap, List<ReactionEmoji> reactionsOrder) {
+        this.confirmationManager = new ConfirmationManager<>(reactionsMap, reactionsOrder);
     }
 
-    protected static Mono<Message> sendMessage(String message, MessageChannel channel) {
-        return MessageUtil.sendMessage(message, channel);
-    }
-
-    protected static Mono<Message> sendEmbed(Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
-        return MessageUtil.sendEmbed(embed, channel);
-    }
-
-    protected static Mono<Message> sendMessage(String message, Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
-        return MessageUtil.sendEmbed(message, embed, channel);
+    protected Mono<Message> addReactions(Message message, C context) {
+        return confirmationManager.addReactions(message, context);
     }
 }

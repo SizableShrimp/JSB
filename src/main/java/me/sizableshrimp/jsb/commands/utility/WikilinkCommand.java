@@ -24,7 +24,7 @@ package me.sizableshrimp.jsb.commands.utility;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import me.sizableshrimp.jsb.api.AbstractCommand;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
@@ -61,9 +61,13 @@ public class WikilinkCommand extends AbstractCommand {
 
         return event.getMessage().getChannel().flatMap(channel -> {
             String link = args.getJoinedArgs();
-            String message = genWikilink(new StringBuilder(), context.getWiki(), link).toString();
+            String message = genWikilink(context.getWiki(), link);
             return sendMessage(message, channel);
         });
+    }
+
+    public static String genWikilink(Wiki wiki, String link) {
+        return genWikilink(new StringBuilder(), wiki, link).toString();
     }
 
     public static StringBuilder genWikilink(StringBuilder builder, Wiki wiki, String link) {

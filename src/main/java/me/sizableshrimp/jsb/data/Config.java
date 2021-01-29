@@ -20,16 +20,15 @@
  * SOFTWARE.
  */
 
-package me.sizableshrimp.jsb;
+package me.sizableshrimp.jsb.data;
 
-import com.google.gson.Gson;
+import me.sizableshrimp.jsb.Bot;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class Config {
-    private static final Gson GSON = new Gson();
     private String useragent;
     private String username;
     private String password;
@@ -42,7 +41,7 @@ public final class Config {
     private Config() {}
 
     public static Config getConfig(Path path) throws IOException {
-        return GSON.fromJson(Files.newBufferedReader(path), Config.class);
+        return Bot.GSON.fromJson(Files.newBufferedReader(path), Config.class);
     }
 
     public static Config loadHeroku() {

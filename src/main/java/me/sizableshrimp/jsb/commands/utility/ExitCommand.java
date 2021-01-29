@@ -24,7 +24,7 @@ package me.sizableshrimp.jsb.commands.utility;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import me.sizableshrimp.jsb.Bot;
-import me.sizableshrimp.jsb.api.AbstractCommand;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
@@ -56,9 +56,9 @@ public class ExitCommand extends AbstractCommand {
 
     @Override
     public Mono<Void> run(CommandContext context, MessageCreateEvent event, Args args) {
-        return event.getMessage().getChannel().doOnNext(channel -> Bot.LOGGER.info("Exiting program..."))
+        return event.getMessage().getChannel()
+                .doOnNext(channel -> Bot.LOGGER.info("Exiting program..."))
                 .flatMap(channel -> sendMessage("Exiting program...", channel))
-                .then(event.getClient().logout())
-                .doOnSuccess(v -> System.exit(0));
+                .then(event.getClient().logout());
     }
 }

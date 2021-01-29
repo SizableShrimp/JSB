@@ -20,25 +20,17 @@
  * SOFTWARE.
  */
 
-package me.sizableshrimp.jsb.api;
+package me.sizableshrimp.jsb.util;
 
-import discord4j.core.GatewayDiscordClient;
-import org.fastily.jwiki.core.Wiki;
+import discord4j.core.object.reaction.ReactionEmoji;
 
-import java.util.Set;
+/**
+ * A static util class holding unicode {@link ReactionEmoji} constants.
+ */
+public class Reactions {
+    public static final ReactionEmoji CHECKMARK = ReactionEmoji.unicode("✅");
+    public static final ReactionEmoji X = ReactionEmoji.unicode("❌");
+    public static final ReactionEmoji WASTEBASKET = ReactionEmoji.unicode("\uD83D\uDDD1");
 
-public class EventHandler {
-    protected final GatewayDiscordClient client;
-    protected final Set<EventListener> listeners;
-
-    public EventHandler(GatewayDiscordClient client, Wiki wiki) {
-        this.client = client;
-        this.listeners = CommandLoader.loadClasses(EventListener.class, new Class[]{GatewayDiscordClient.class, Wiki.class}, new Object[]{client, wiki});
-    }
-
-    public void register() {
-        for (EventListener listener : listeners) {
-            listener.register(client.getEventDispatcher());
-        }
-    }
+    private Reactions() {}
 }

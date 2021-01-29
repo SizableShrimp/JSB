@@ -22,25 +22,50 @@
 
 package me.sizableshrimp.jsb.commands.utility.mod;
 
-import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.reaction.ReactionEmoji;
-import me.sizableshrimp.jsb.api.AbstractCommand;
+import me.sizableshrimp.jsb.Bot;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
+import me.sizableshrimp.jsb.api.ConfirmationCommand;
 import me.sizableshrimp.jsb.args.Args;
+import me.sizableshrimp.jsb.data.BaseConfirmationContext;
 import me.sizableshrimp.jsb.data.Mod;
+import me.sizableshrimp.jsb.util.MessageUtil;
+import me.sizableshrimp.jsb.util.Reactions;
+import org.fastily.jwiki.core.AReply;
+import org.fastily.jwiki.core.Wiki;
 import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class RemoveModCommand extends AbstractCommand {
-    public static final Map<Snowflake, Confirmation> awaitingConfirmation = new HashMap<>();
+public class RemoveModCommand extends ConfirmationCommand<RemoveModCommand.ConfirmationContext> {
     public static final String REACT_WITH = "Please react with ❌ to delete or \uD83D\uDDD1 to cancel.";
+
+    public RemoveModCommand() {
+        super(Map.of(
+                Reactions.X, (confirmation, event) -> {
+                    Mod toDelete = confirmation.toDelete;
+
+                    try {
+                        AReply reply = toDelete.remove();
+                        String message = MessageUtil.getMessageFromReply(reply, r -> {
+                            Bot.LOGGER.info("Removed mod {} from mods list.", toDelete);
+                            return String.format("Removed **%s** (abbreviated as `%s`) from the mods list. Please mark for translation.",
+                                    toDelete.getName(), toDelete.getAbbrv());
+                        }, r -> "deleting mod " + toDelete.getAbbrv());
+
+                        return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(message, channel));
+                    } catch (IllegalStateException e) {
+                        return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(e.getMessage(), channel));
+                    }
+                }, Reactions.WASTEBASKET, (confirmation, event) -> event.getMessage().flatMap(Message::delete)
+                        .then(event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("Cancelling deletion of mod named **%s** with abbreviation `%s`...",
+                                confirmation.toDelete.getName(), confirmation.toDelete.getAbbrv()), channel)))
+        ), List.of(Reactions.X, Reactions.WASTEBASKET));
+    }
 
     @Override
     public CommandInfo getInfo() {
@@ -84,26 +109,19 @@ public class RemoveModCommand extends AbstractCommand {
                         toDelete.getName(), toDelete.getAbbrv(), toDelete.getUrlLink()), channel);
             } else {
                 confirm = sendMessage(String
-                        .format("Do you want to delete the mod named **%s** with abbreviation `%s` from the list? "
-                                + REACT_WITH, toDelete.getName(), toDelete.getAbbrv()),
+                                .format("Do you want to delete the mod named **%s** with abbreviation `%s` from the list? "
+                                        + REACT_WITH, toDelete.getName(), toDelete.getAbbrv()),
                         channel);
             }
-            return confirm
-                    .doOnNext(m -> awaitingConfirmation.put(m.getId(),
-                            new Confirmation(event.getMessage().getAuthor().get().getId(), m.getId(), toDelete)))
-                    .flatMap(m -> m.addReaction(ReactionEmoji.unicode("❌")).thenReturn(m))
-                    .flatMap(m -> m.addReaction(ReactionEmoji.unicode("\uD83D\uDDD1")).thenReturn(m));
+            return confirm.flatMap(m -> addReactions(m, new ConfirmationContext(context.getWiki(), event.getMessage(), m, toDelete)));
         });
     }
 
-    public static final class Confirmation {
-        public final Snowflake author;
-        public final Snowflake message;
+    public static final class ConfirmationContext extends BaseConfirmationContext {
         public final Mod toDelete;
 
-        public Confirmation(Snowflake author, Snowflake message, Mod toDelete) {
-            this.author = author;
-            this.message = message;
+        public ConfirmationContext(Wiki wiki, Message original, Message response, Mod toDelete) {
+            super(wiki, original, response);
             this.toDelete = toDelete;
         }
     }

@@ -26,8 +26,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.sizableshrimp.jsb.util.WikiUtil;
-import okhttp3.Response;
 import org.fastily.jwiki.core.Wiki;
+import org.fastily.jwiki.dwrap.TokenizedResponse;
 import org.fastily.jwiki.util.FL;
 import org.fastily.jwiki.util.GSONP;
 import org.slf4j.Logger;
@@ -58,16 +58,17 @@ public final class Scribunto {
      * using {@code mw.text.jsonEncode}. If {@code code} is set to null, it defaults
      * to "p", or "package."
      *
-     * @param wiki   A {@link Wiki} object to use for requesting the data.
+     * @param wiki A {@link Wiki} object to use for requesting the data.
      * @param module The name of a module on the wiki, with or without the "Module:"
-     *               prefix, e.g. "Language" or "Module:Language".
-     * @param code   The code to parse from the module, or "p" if null. Some
-     *               examples are "p" or "p.functionName(parameters)"
+     * prefix, e.g. "Language" or "Module:Language".
+     * @param code The code to parse from the module, or "p" if null.
+     * Some examples are "p" or "p.functionName(parameters)".
+     * Do not start this with "=" or you will get an error, as this is already used to return JSON-encoded data.
      * @return A {@link Scribunto} response object containing the response JSON,
-     *         what was printed to the Scribunto console with {@code mw.log}, and
-     *         the returned JSON-encoded string. This returns a blank object if the
-     *         module does not exist or the response is not in the form of a JSON
-     *         object.
+     * what was printed to the Scribunto console with {@code mw.log}, and
+     * the returned JSON-encoded string. This returns a blank object if the
+     * module does not exist or the response is not in the form of a JSON
+     * object.
      */
     public static Scribunto runScribuntoCode(Wiki wiki, String module, String code) {
         if (code == null)
@@ -75,13 +76,10 @@ public final class Scribunto {
         module = prefixModule(module);
         if (!wiki.exists(module))
             return new Scribunto();
-        Response response = wiki.basicPOST("scribunto-console", FL.pMap("title", module, "question",
+        TokenizedResponse response = wiki.basicPOST("scribunto-console", FL.pMap("title", module, "question",
                 "=mw.text.jsonEncode(" + code + ")", "content", wiki.getPageText(module)));
-        JsonElement json = WikiUtil.jsonFromResponse(response);
-        if (!json.isJsonObject())
-            return new Scribunto();
 
-        return new Scribunto(json.getAsJsonObject());
+        return new Scribunto(response.getJsonBody()));
     }
 
     private static String prefixModule(String title) {
@@ -106,7 +104,7 @@ public final class Scribunto {
         if (this.responseJson.getAsJsonPrimitive("type").getAsString().equals("normal")) {
             return JsonParser.parseString(this.responseJson.getAsJsonPrimitive("return").getAsString());
         } else {
-            LOGGER.error("Scribunto Console API returned a non-normal result:\n{}", GSONP.gsonPP.toJson(responseJson));
+            LOGGER.error("Scribunto Console API returned a non-normal result: {}", responseJson);
             return null;
         }
     }

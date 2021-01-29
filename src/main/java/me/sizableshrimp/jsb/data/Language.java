@@ -26,7 +26,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import me.sizableshrimp.jsb.util.WikiUtil;
-import org.fastily.jwiki.core.WQuery;
+import org.fastily.jwiki.core.QTemplate;
 import org.fastily.jwiki.core.Wiki;
 import org.fastily.jwiki.util.FL;
 import org.fastily.jwiki.util.GSONP;
@@ -68,12 +68,12 @@ public final class Language {
     // /**
     //  * https://www.mediawiki.org/wiki/API:Languageinfo
     //  */
-    // private static final WQuery.QTemplate LANGUAGE_INFO = new WQuery.QTemplate(FL.pMap("action", "query", "meta", "languageinfo", "liprop", "code|dir|autonym|name",
+    // private static final QTemplate LANGUAGE_INFO = new QTemplate(FL.pMap("action", "query", "meta", "languageinfo", "liprop", "code|dir|autonym|name",
     //         "uselang", "en"), "query");
     /**
      * https://www.mediawiki.org/wiki/API:Siteinfo
      */
-    private static final WQuery.QTemplate LANGUAGE_INFO = new WQuery.QTemplate(FL.pMap("action", "query", "meta", "siteinfo", "siprop", "languages"), "query");
+    private static final QTemplate LANGUAGE_INFO = new QTemplate(FL.pMap("action", "query", "meta", "siteinfo", "siprop", "languages"), "query");
     private static Map<String, Language> codes = null;
     private static Map<String, Language> joined = null;
 
@@ -140,8 +140,8 @@ public final class Language {
 
         codes = new HashMap<>();
         joined = new HashMap<>();
-        List<JsonObject> languageinfo = WikiUtil.getQueryRepliesAsList(new WQuery(wiki, LANGUAGE_INFO), "languages");
-        List<JsonObject> englishNames = WikiUtil.getQueryRepliesAsList(new WQuery(wiki, LANGUAGE_INFO).set("siinlanguagecode", "en"), "languages");
+        List<JsonObject> languageinfo = WikiUtil.getQueryRepliesAsList(LANGUAGE_INFO.createQuery(wiki), "languages");
+        List<JsonObject> englishNames = WikiUtil.getQueryRepliesAsList(LANGUAGE_INFO.createQuery(wiki).set("siinlanguagecode", "en"), "languages");
 
         parseLanguageInfo(languageinfo, englishNames);
         parseOverrides(Scribunto.runScribuntoCode(wiki, "Language/Names", null).getReturnJson().getAsJsonObject());

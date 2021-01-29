@@ -25,7 +25,7 @@ package me.sizableshrimp.jsb.commands.utility.mod;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
-import me.sizableshrimp.jsb.api.AbstractCommand;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
@@ -49,7 +49,7 @@ public class GetModCommand extends AbstractCommand {
 
     @Override
     public Set<String> getAliases() {
-        return Set.of("modinfo", "mod", "getabbrv");
+        return Set.of("modinfo", "mod", "getabbrv", "abbrv");
     }
 
     @Override
@@ -85,11 +85,11 @@ public class GetModCommand extends AbstractCommand {
         });
     }
 
-    private Mono<Message> formatModDoesntExistMessage(MessageChannel channel, String modInput) {
+    public static Mono<Message> formatModDoesntExistMessage(MessageChannel channel, String modInput) {
         return sendMessage(String.format("The mod specified (**%s**) does not exist.", modInput), channel);
     }
 
-    private Mono<Message> formatModMessage(MessageChannel channel, Mod mod, Language language) {
+    public static Mono<Message> formatModMessage(MessageChannel channel, Mod mod, Language language) {
         String link = '<' + mod.getUrlLink() + '>';
         String formatted = String.format("**%s** (abbreviated as `%s`) can be found at %s.", mod.getName(), mod.getAbbrv(), link);
 

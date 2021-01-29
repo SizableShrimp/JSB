@@ -1,1 +1,1 @@
-web: java $JAVA_OPTS -Dserver.port=$PORT -jar build/libs/DiscordBot.jar
+worker: java -jar build/libs/DiscordBot.jar

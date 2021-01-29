@@ -27,44 +27,70 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
 import discord4j.rest.util.Image;
-import discord4j.rest.util.Image.Format;
 import me.sizableshrimp.jsb.Bot;
+import org.reflections.Reflections;
+import org.reflections.scanners.ResourcesScanner;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 public class DiscordConfiguration {
+    private static final Reflections REFLECTIONS = new Reflections("images", new ResourcesScanner());
+
     private DiscordConfiguration() {}
 
     /**
      * Returns a {@link Mono} that signals completion when all shards have
      * disconnected.
      *
-     * @param token    The token of the discord bot.
+     * @param prefix The prefix to use when setting the presence.
+     * @param token The token of the discord bot.
      * @param consumer A consumer to use the joined {@link GatewayDiscordClient}
-     *                 containing all shards immediately after login.
+     * containing all shards immediately after login.
      * @return A {@link Mono} that signals completion when all shards have
-     *         disconnected.
+     * disconnected.
      */
-    public static Mono<Void> login(String token, Consumer<GatewayDiscordClient> consumer) {
-        byte[] imageBytes = null;
-        try {
-            imageBytes = DiscordConfiguration.class.getResourceAsStream("/JSB.png").readAllBytes();
-        } catch (IOException e) {
-            Bot.LOGGER.error("Could not read avatar image file. Falling back to current avatar.", e);
-        }
-        Image image = imageBytes == null ? null : Image.ofRaw(imageBytes, Format.PNG);
+    public static Mono<Void> login(String prefix, String token, Consumer<GatewayDiscordClient> consumer) {
+        return login(prefix, token, false, consumer);
+    }
+
+    /**
+     * Returns a {@link Mono} that signals completion when all shards have
+     * disconnected.
+     *
+     * @param prefix The prefix to use when setting the presence.
+     * @param token The token of the discord bot.
+     * @param isDebugMode If true, will not update the avatar as during debugging this may be done too fast and cause errors.
+     * @param consumer A consumer to use the joined {@link GatewayDiscordClient}
+     * containing all shards immediately after login.
+     * @return A {@link Mono} that signals completion when all shards have
+     * disconnected.
+     */
+    public static Mono<Void> login(String prefix, String token, boolean isDebugMode, Consumer<GatewayDiscordClient> consumer) {
+        Image image = getImage();
 
         return DiscordClient.create(token).gateway()
                 .setInitialStatus(
-                        client -> Presence.online(Activity.watching(Bot.getConfig().getPrefix() + "help for help")))
-                .withGateway(client -> {
-                    if (image != null)
-                        client.edit(u -> u.setAvatar(image));
-                    consumer.accept(client);
+                        client -> Presence.online(Activity.watching(prefix + "help for help")))
+                .withGateway(client ->
+                        Mono.just(client)
+                                .flatMap(c -> image == null || isDebugMode ? Mono.just(c) : c.edit(u -> u.setAvatar(image)).thenReturn(c))
+                                .doOnNext(consumer)
+                                .flatMap(GatewayDiscordClient::onDisconnect));
+    }
 
-                    return client.onDisconnect();
-                });
+    private static Image getImage() {
+        try {
+            List<String> images = new ArrayList<>(REFLECTIONS.getResources(Pattern.compile(".*\\.png")));
+
+            return Image.ofRaw(DiscordConfiguration.class.getResourceAsStream('/' + images.get(ThreadLocalRandom.current().nextInt(images.size()))).readAllBytes(), Image.Format.PNG);
+        } catch (Exception e) {
+            Bot.LOGGER.error("Could not read avatar image file. Falling back to current avatar.", e);
+            return null;
+        }
     }
 }

@@ -22,26 +22,50 @@
 
 package me.sizableshrimp.jsb.commands.utility.mod;
 
-import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.reaction.ReactionEmoji;
-import me.sizableshrimp.jsb.api.AbstractCommand;
+import me.sizableshrimp.jsb.Bot;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
+import me.sizableshrimp.jsb.api.ConfirmationCommand;
 import me.sizableshrimp.jsb.args.Args;
+import me.sizableshrimp.jsb.data.BaseConfirmationContext;
 import me.sizableshrimp.jsb.data.Mod;
+import me.sizableshrimp.jsb.util.MessageUtil;
+import me.sizableshrimp.jsb.util.Reactions;
+import org.fastily.jwiki.core.AReply;
+import org.fastily.jwiki.core.Wiki;
 import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-public class AddModCommand extends AbstractCommand {
+public class AddModCommand extends ConfirmationCommand<AddModCommand.ConfirmationContext> {
     private static final Pattern CHARACTERS = Pattern.compile("^([a-zA-Z0-9]+)$");
-    public static final Map<Snowflake, Confirmation> awaitingConfirmation = new HashMap<>();
+
+    public AddModCommand() {
+        super(Map.of(
+                Reactions.CHECKMARK, (confirmation, event) -> {
+                    Mod newMod = confirmation.newMod;
+
+                    try {
+                        AReply reply = newMod.add();
+                        String message = MessageUtil.getMessageFromReply(reply, r -> {
+                            Bot.LOGGER.info("Added mod {} to mods list.", newMod);
+                            return String.format("Added **%s** (abbreviated as `%s`) to the mods list. Please mark for translation.", newMod.getName(), newMod.getAbbrv());
+                        }, r -> "adding mod " + newMod.getAbbrv());
+
+                        return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(message, channel));
+                    } catch (IllegalStateException e) {
+                        return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(e.getMessage(), channel));
+                    }
+                }, Reactions.X, (confirmation, event) -> event.getMessage().flatMap(Message::delete)
+                        .then(event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("Cancelling addition of mod named **%s** with abbreviation `%s`...",
+                                confirmation.newMod.getName(), confirmation.newMod.getAbbrv()), channel)))
+        ), List.of(Reactions.CHECKMARK, Reactions.X));
+    }
 
     @Override
     public CommandInfo getInfo() {
@@ -104,23 +128,16 @@ public class AddModCommand extends AbstractCommand {
                             "Do you want to add a new mod to the list named **%s** with abbreviation `%s`? Please react with ✅ for yes or ❌ for no.",
                             newMod.getName(), newMod.getAbbrv()), channel);
                 }
-                return confirm
-                        .doOnNext(m -> awaitingConfirmation.put(m.getId(),
-                                new Confirmation(event.getMessage().getAuthor().get().getId(), m.getId(), newMod)))
-                        .flatMap(m -> m.addReaction(ReactionEmoji.unicode("✅")).thenReturn(m))
-                        .flatMap(m -> m.addReaction(ReactionEmoji.unicode("❌")).thenReturn(m));
+                return confirm.flatMap(m -> addReactions(m, new ConfirmationContext(context.getWiki(), event.getMessage(), m, newMod)));
             }
         });
     }
 
-    public static final class Confirmation {
-        public final Snowflake author;
-        public final Snowflake message;
+    public static final class ConfirmationContext extends BaseConfirmationContext {
         public final Mod newMod;
 
-        public Confirmation(Snowflake author, Snowflake message, Mod newMod) {
-            this.author = author;
-            this.message = message;
+        public ConfirmationContext(Wiki wiki, Message original, Message response, Mod newMod) {
+            super(wiki, original, response);
             this.newMod = newMod;
         }
     }

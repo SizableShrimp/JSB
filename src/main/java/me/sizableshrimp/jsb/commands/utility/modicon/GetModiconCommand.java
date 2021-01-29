@@ -20,34 +20,44 @@
  * SOFTWARE.
  */
 
-package me.sizableshrimp.jsb.commands.utility.lang;
+package me.sizableshrimp.jsb.commands.utility.modicon;
 
+import com.google.gson.JsonElement;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
-import me.sizableshrimp.jsb.data.Language;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
+import me.sizableshrimp.jsb.commands.utility.mod.GetModCommand;
+import me.sizableshrimp.jsb.data.Mod;
+import me.sizableshrimp.jsb.util.WikiUtil;
+import org.fastily.jwiki.core.QReply;
+import org.fastily.jwiki.core.QTemplate;
+import org.fastily.jwiki.core.WQuery;
+import org.fastily.jwiki.util.FL;
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
 import java.util.Set;
 
-public class GetLanguageCommand extends AbstractCommand {
+public class GetModiconCommand extends AbstractCommand {
+    private static final QTemplate IMAGE_INFO = new QTemplate(FL.pMap("iiprop", "url"), "iilimit", "pages");
+
     @Override
     public CommandInfo getInfo() {
-        return new CommandInfo(this, "%cmdname% <language info>",
-                "Get a language using its language code, language name, or localized language name and display information about it.");
+        return new CommandInfo(this, "%cmdname% <mod name|mod abbreviation>",
+                "Get a mod's modicon file and displays it in an embed.");
     }
 
     @Override
     public String getName() {
-        return "getlang";
+        return "getmodicon";
     }
 
     @Override
     public Set<String> getAliases() {
-        return Set.of("getlanguage", "lang", "language");
+        return Set.of("modicon");
     }
 
     @Override
@@ -57,18 +67,24 @@ public class GetLanguageCommand extends AbstractCommand {
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
-            String langInput = args.getJoinedArgs();
-            Language language = Language.getByInfo(context.getWiki(), langInput);
-            
-            String formatted;
-            if (language != null) {
-                formatted = String.format( "**%s** has a language code of `%s` and is called **%s** in its own language.",
-                        language.getEnglish(), language.getCode(), language.getAutonym());
-            } else {
-                formatted = String.format("A language could not be found with the info `%s`.", langInput);
+            String modInput = args.getJoinedArgs();
+            Mod mod = Mod.getByInfo(context.getWiki(), modInput);
+
+            if (mod == null) {
+                return GetModCommand.formatModDoesntExistMessage(channel, modInput);
             }
 
-            return sendMessage(formatted, channel);
+            String file = String.format("File:Modicon %s.png", mod.getName());
+            String fileUrl = WikiUtil.getLatestFileUrl(context.getWiki(), file);
+            String link = WikiUtil.getBaseWikiPageUrl(context.getWiki(), file);
+
+            if (file == null) // It is missing
+                return sendMessage(String.format("A modicon for **%s** does not exist at <%s>.", mod.getName(), link), channel);
+
+            return sendEmbed(spec -> spec.setImage(fileUrl)
+                    .setTitle(file)
+                    .setUrl(link)
+                    .setFooter("Retrieved by JSB with love ❤", null), channel);
         });
     }
 }

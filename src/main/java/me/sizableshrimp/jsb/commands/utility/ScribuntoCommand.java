@@ -22,12 +22,11 @@
 
 package me.sizableshrimp.jsb.commands.utility;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import me.sizableshrimp.jsb.api.AbstractCommand;
+import me.sizableshrimp.jsb.Bot;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
@@ -39,8 +38,6 @@ import java.util.List;
 import java.util.Set;
 
 public class ScribuntoCommand extends AbstractCommand {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-
     @Override
     public CommandInfo getInfo() {
         return new CommandInfo(this, "%cmdname% <module name> <code>", """
@@ -48,7 +45,6 @@ public class ScribuntoCommand extends AbstractCommand {
                 The module name should be the name of the module, with or without the `Module:` namespace.
                 If the module name has a space in it, the name should be wrapped in quotes.
                 The code should not be wrapped in a code block and should be code that could run in a module's console space.
-                Editor only.
                 """);
     }
 
@@ -112,6 +108,6 @@ public class ScribuntoCommand extends AbstractCommand {
     private String printJson(JsonObject json) {
         json = json.deepCopy();
         json.entrySet().removeIf(entry -> entry.getKey().startsWith("session"));
-        return "```json\n" + GSON.toJson(json) + "```";
+        return "```json\n" + Bot.GSON.toJson(json) + "```";
     }
 }

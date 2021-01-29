@@ -20,17 +20,20 @@
  * SOFTWARE.
  */
 
-package me.sizableshrimp.jsb;
+package me.sizableshrimp.jsb.data;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import discord4j.common.util.Snowflake;
+import discord4j.core.object.entity.Message;
+import org.fastily.jwiki.core.Wiki;
 
-@RestController
-public class WebController {
-    @RequestMapping("/")
-    @ResponseBody
-    public String home() {
-        return "The JSB Discord Bot is currently running.";
+public abstract class BaseConfirmationContext {
+    public final Wiki wiki;
+    public final Snowflake authorId;
+    public final Snowflake messageId;
+
+    protected BaseConfirmationContext(Wiki wiki, Message original, Message response) {
+        this.wiki = wiki;
+        this.authorId = original.getAuthor().get().getId();
+        this.messageId = response.getId();
     }
 }

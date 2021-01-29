@@ -20,32 +20,34 @@
  * SOFTWARE.
  */
 
-package me.sizableshrimp.jsb.listeners;
+package me.sizableshrimp.jsb.commands;
 
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.domain.message.ReactionAddEvent;
+import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.reaction.ReactionEmoji;
-import me.sizableshrimp.jsb.api.EventListener;
-import org.fastily.jwiki.core.Wiki;
-import reactor.core.publisher.Flux;
+import discord4j.core.object.entity.channel.MessageChannel;
+import discord4j.core.spec.EmbedCreateSpec;
+import me.sizableshrimp.jsb.api.Command;
+import me.sizableshrimp.jsb.commands.utility.info.HelpCommand;
+import me.sizableshrimp.jsb.util.MessageUtil;
 import reactor.core.publisher.Mono;
 
-public class WikilinkDeleteListener extends EventListener<ReactionAddEvent> {
-    private static final ReactionEmoji WASTEBASKET = ReactionEmoji.unicode("🗑️");
+import java.util.function.Consumer;
 
-    public WikilinkDeleteListener(GatewayDiscordClient client, Wiki wiki) {
-        super(ReactionAddEvent.class, client, wiki);
+public abstract class AbstractCommand implements Command {
+    // Helper functions
+    protected final Mono<Message> incorrectUsage(MessageCreateEvent event) {
+        return event.getMessage().getChannel().flatMap(c -> sendEmbed(HelpCommand.display(event, this), c));
     }
 
-    @Override
-    protected Mono<Void> execute(Flux<ReactionAddEvent> onEvent) {
-        return onEvent
-                .filter(e -> e.getEmoji().equals(WASTEBASKET))
-                .filter(e -> !e.getUserId().equals(e.getClient().getSelfId()))
-                .filter(e -> WikilinkListener.wikilinkMessages.contains(e.getMessageId()))
-                .flatMap(ReactionAddEvent::getMessage)
-                .flatMap(Message::delete)
-                .then();
+    protected static Mono<Message> sendMessage(String message, MessageChannel channel) {
+        return MessageUtil.sendMessage(message, channel);
+    }
+
+    protected static Mono<Message> sendEmbed(Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
+        return MessageUtil.sendEmbed(embed, channel);
+    }
+
+    protected static Mono<Message> sendMessage(String message, Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
+        return MessageUtil.sendEmbed(message, embed, channel);
     }
 }

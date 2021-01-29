@@ -63,7 +63,7 @@ public class ArgsProcessor {
 
         boolean quote = false;
         boolean escaped = false;
-        char[] chars = data.toCharArray();
+        char[] chars = data.trim().toCharArray();
         for (char c : chars) {
             if (c == '"' && !escaped) {
                 quote = !quote;
