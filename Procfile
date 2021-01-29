@@ -1,1 +1,1 @@
-worker: java -jar build/libs/DiscordBot.jar
+worker: java $JAVA_OPTS -jar build/libs/DiscordBot.jar
