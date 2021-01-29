@@ -59,7 +59,7 @@ public final class WikiUtil {
      * @return The {@link AReply} containing JSON data returned from the API.
      */
     public static AReply parse(Wiki wiki, String contentModel, String parse) {
-        String cm = contentModel == null ? "wikitext" : contparseentModel;
+        String cm = contentModel == null ? "wikitext" : contentModel;
         return WAction.getAction(wiki, "parse", true, "wrapoutputclass", "", "disablelimitreport", "true", "contentmodel", cm, "text", parse);
     }
 

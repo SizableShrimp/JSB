@@ -79,7 +79,7 @@ public final class Scribunto {
         TokenizedResponse response = wiki.basicPOST("scribunto-console", FL.pMap("title", module, "question",
                 "=mw.text.jsonEncode(" + code + ")", "content", wiki.getPageText(module)));
 
-        return new Scribunto(response.getJsonBody()));
+        return new Scribunto(response.getJsonBody());
     }
 
     private static String prefixModule(String title) {
