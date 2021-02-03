@@ -110,8 +110,8 @@ public class MovePageCommand extends ConfirmationCommand<MovePageCommand.Confirm
             String destinationUrl = WikiUtil.getBaseWikiPageUrl(context.getWiki(), destinationPage);
             String redirectMessage = leaveRedirect ? "while keeping a redirect" : "__without__ leaving a redirect";
             String reasonMessage = reason == null ? "" : " with reason \"" + reason + "\"";
-            String fullMessage = String.format("**%s** to <%s> %s%s?", originalPage, destinationUrl, redirectMessage, reasonMessage);
-            return sendMessage("Do you want to move " + fullMessage, channel)
+            String fullMessage = String.format("**%s** to <%s> %s%s", originalPage, destinationUrl, redirectMessage, reasonMessage);
+            return sendMessage("Do you want to move " + fullMessage + '?', channel)
                     .flatMap(m -> addReactions(m, new ConfirmationContext(context.getWiki(), event.getMessage(), m, originalPage, destinationPage, leaveRedirect, parsedReason, fullMessage)));
         });
     }
