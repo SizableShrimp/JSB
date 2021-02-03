@@ -26,17 +26,16 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import me.sizableshrimp.jsb.Bot;
-import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.data.Mod;
 import me.sizableshrimp.jsb.util.MessageUtil;
 import me.sizableshrimp.jsb.util.WikiUtil;
 import org.fastily.jwiki.core.AReply;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,11 +61,6 @@ public class TilesheetRequestCommand extends AbstractCommand {
     @Override
     public Set<String> getAliases() {
         return Set.of("tilerequest", "tr");
-    }
-
-    @Override
-    public List<String> getRequiredRoles() {
-        return List.of("Editor");
     }
 
     @Override
