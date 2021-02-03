@@ -23,6 +23,7 @@
 package me.sizableshrimp.jsb.util;
 
 import discord4j.common.util.Snowflake;
+import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
@@ -66,6 +67,17 @@ public final class MessageUtil {
                 .cast(GuildMessageChannel.class)
                 .flatMap(c -> c.getEffectivePermissions(id))
                 .map(set -> set.contains(Permission.SEND_MESSAGES));
+    }
+
+    public static Mono<Boolean> canReply(Message message) {
+        return message.getChannel().map(c -> c instanceof GuildMessageChannel)
+                .filterWhen(b -> MessageUtil.canSendMessages(message))
+                .filter(b -> message.getAuthor().map(u -> !u.isBot()).orElse(false))
+                .filter(e -> !message.getContent().isEmpty());
+    }
+
+    public static Mono<Boolean> canReply(MessageCreateEvent event) {
+        return canReply(event.getMessage());
     }
 
     /**

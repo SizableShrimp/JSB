@@ -24,7 +24,6 @@ package me.sizableshrimp.jsb.listeners;
 
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.entity.channel.GuildMessageChannel;
 import me.sizableshrimp.jsb.Bot;
 import me.sizableshrimp.jsb.api.CommandManager;
 import me.sizableshrimp.jsb.api.EventListener;
@@ -44,10 +43,8 @@ public class MessageListener extends EventListener<MessageCreateEvent> {
     @Override
     protected Mono<Void> execute(Flux<MessageCreateEvent> onEvent) {
         return onEvent
-                .filterWhen(e -> e.getMessage().getChannel().map(c -> c instanceof GuildMessageChannel))
-                .filterWhen(e -> MessageUtil.canSendMessages(e.getMessage()))
-                .filter(e -> e.getMessage().getAuthor().map(u -> !u.isBot()).orElse(false))
-                .flatMap(commandManager::executeCommand)
+                .filterWhen(MessageUtil::canReply)
+                .flatMap(this.commandManager::executeCommand)
                 .onErrorContinue((error, event) -> Bot.LOGGER.error("Message listener had an uncaught exception!", error))
                 .then();
     }

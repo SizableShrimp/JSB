@@ -27,7 +27,6 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.channel.GuildMessageChannel;
 import me.sizableshrimp.jsb.Bot;
 import me.sizableshrimp.jsb.api.EventListener;
 import me.sizableshrimp.jsb.util.MessageUtil;
@@ -51,10 +50,7 @@ public abstract class TrashableMessageListener extends EventListener<MessageCrea
     @Override
     protected final Mono<Void> execute(Flux<MessageCreateEvent> onEvent) {
         return onEvent
-                .filterWhen(e -> e.getMessage().getChannel().map(c -> c instanceof GuildMessageChannel))
-                .filterWhen(e -> MessageUtil.canSendMessages(e.getMessage()))
-                .filter(e -> e.getMessage().getAuthor().map(u -> !u.isBot()).orElse(false))
-                .filter(e -> !e.getMessage().getContent().isEmpty())
+                .filterWhen(MessageUtil::canReply)
                 .flatMap(this::genMessage)
                 .flatMap(m -> m.addReaction(Reactions.WASTEBASKET).thenReturn(m))
                 .doOnNext(m -> messages.add(m.getId()))
