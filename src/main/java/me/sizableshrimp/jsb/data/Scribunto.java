@@ -25,7 +25,6 @@ package me.sizableshrimp.jsb.data;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import me.sizableshrimp.jsb.util.WikiUtil;
 import org.fastily.jwiki.core.Wiki;
 import org.fastily.jwiki.dwrap.TokenizedResponse;
 import org.fastily.jwiki.util.FL;
@@ -79,7 +78,7 @@ public final class Scribunto {
         TokenizedResponse response = wiki.basicPOST("scribunto-console", FL.pMap("title", module, "question",
                 "=mw.text.jsonEncode(" + code + ")", "content", wiki.getPageText(module)));
 
-        return new Scribunto(response.getJsonBody());
+        return new Scribunto(response.getJsonBody().getAsJsonObject());
     }
 
     private static String prefixModule(String title) {
@@ -87,7 +86,7 @@ public final class Scribunto {
     }
 
     public String getReturn() {
-        return ret;
+        return this.ret;
     }
 
     /**
@@ -104,7 +103,7 @@ public final class Scribunto {
         if (this.responseJson.getAsJsonPrimitive("type").getAsString().equals("normal")) {
             return JsonParser.parseString(this.responseJson.getAsJsonPrimitive("return").getAsString());
         } else {
-            LOGGER.error("Scribunto Console API returned a non-normal result: {}", responseJson);
+            LOGGER.error("Scribunto Console API returned a non-normal result: {}", this.responseJson);
             return null;
         }
     }
