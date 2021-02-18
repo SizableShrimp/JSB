@@ -24,17 +24,20 @@ package me.sizableshrimp.jsb.commands.utility;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.util.WikiUtil;
 import org.fastily.jwiki.core.Wiki;
 import reactor.core.publisher.Mono;
 
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public class WikilinkCommand extends AbstractCommand {
+    private static final Pattern SPECIAL_PAGE = Pattern.compile("^:?Special:");
+
     @Override
     public CommandInfo getInfo() {
         return new CommandInfo(this, "%cmdname% <page>", """
@@ -71,6 +74,9 @@ public class WikilinkCommand extends AbstractCommand {
     }
 
     public static StringBuilder genWikilink(StringBuilder builder, Wiki wiki, String link) {
+        if (SPECIAL_PAGE.matcher(link).find())
+            return builder.append('<').append(WikiUtil.getBaseWikiPageUrl(wiki, link)).append(">\n");
+
         String baseUrl = WikiUtil.getBaseArticleUrl(wiki);
         String url = WikiUtil.getWikiPageUrl(wiki, link);
         if (url == null) {
