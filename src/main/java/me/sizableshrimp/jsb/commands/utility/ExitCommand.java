@@ -24,10 +24,10 @@ package me.sizableshrimp.jsb.commands.utility;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import me.sizableshrimp.jsb.Bot;
-import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
 import reactor.core.publisher.Mono;
 
 import java.util.List;

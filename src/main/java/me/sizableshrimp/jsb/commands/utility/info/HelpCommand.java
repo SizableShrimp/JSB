@@ -27,12 +27,12 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import me.sizableshrimp.jsb.Bot;
-import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.api.Command;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
 import me.sizableshrimp.jsb.args.ArgsProcessor;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
 import reactor.core.publisher.Mono;
 
 import java.util.List;

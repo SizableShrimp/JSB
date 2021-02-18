@@ -22,7 +22,6 @@
 
 package me.sizableshrimp.jsb.commands.utility.modicon;
 
-import com.google.gson.JsonElement;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import me.sizableshrimp.jsb.api.CommandContext;
@@ -32,13 +31,10 @@ import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.commands.utility.mod.GetModCommand;
 import me.sizableshrimp.jsb.data.Mod;
 import me.sizableshrimp.jsb.util.WikiUtil;
-import org.fastily.jwiki.core.QReply;
 import org.fastily.jwiki.core.QTemplate;
-import org.fastily.jwiki.core.WQuery;
 import org.fastily.jwiki.util.FL;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 import java.util.Set;
 
 public class GetModiconCommand extends AbstractCommand {
