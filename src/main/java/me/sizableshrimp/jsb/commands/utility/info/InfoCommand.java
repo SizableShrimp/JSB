@@ -70,7 +70,7 @@ public class InfoCommand extends AbstractCommand {
             embed.setAuthor("Information", null, null);
             embed.setDescription(description);
             embed.addField("Discord4J Version", GitProperties.getProperties().getProperty(GitProperties.APPLICATION_VERSION), true);
-            embed.addField("Source", "[https://github.com/SizableShrimp/JSB](SizableShrimp/JSB on Github)", false);
+            embed.addField("Source", "[SizableShrimp/JSB on Github](https://github.com/SizableShrimp/JSB)", false);
             embed.addField("Prefix", '`' + Bot.getConfig().getPrefix() + '`', false);
             embed.addField("Uptime", getUptime(), false);
         };
