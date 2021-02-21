@@ -41,7 +41,7 @@ public class GetModiconCommand extends AbstractCommand {
     private static final QTemplate IMAGE_INFO = new QTemplate(FL.pMap("iiprop", "url"), "iilimit", "pages");
 
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname% <mod name|mod abbreviation>",
                 "Get a mod's modicon file and displays it in an embed.");
     }
@@ -59,20 +59,20 @@ public class GetModiconCommand extends AbstractCommand {
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         if (args.getLength() < 1) {
-            return incorrectUsage(event);
+            return incorrectUsage(context, event);
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
             String modInput = args.getJoinedArgs();
-            Mod mod = Mod.getByInfo(context.getWiki(), modInput);
+            Mod mod = Mod.getByInfo(context.wiki(), modInput);
 
             if (mod == null) {
                 return GetModCommand.formatModDoesntExistMessage(channel, modInput);
             }
 
             String file = String.format("File:Modicon %s.png", mod.getName());
-            String fileUrl = WikiUtil.getLatestFileUrl(context.getWiki(), file);
-            String link = WikiUtil.getBaseWikiPageUrl(context.getWiki(), file);
+            String fileUrl = WikiUtil.getLatestFileUrl(context.wiki(), file);
+            String link = WikiUtil.getBaseWikiPageUrl(context.wiki(), file);
 
             if (file == null) // It is missing
                 return sendMessage(String.format("A modicon for **%s** does not exist at <%s>.", mod.getName(), link), channel);

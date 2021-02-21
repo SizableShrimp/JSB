@@ -37,7 +37,7 @@ import java.util.Set;
 
 public class GetModCommand extends AbstractCommand {
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname% <mod name|mod abbreviation> [language code]",
                 "Get a mod using the unlocalized mod name or abbreviation. Optionally display the localized name in the language.");
     }
@@ -55,12 +55,12 @@ public class GetModCommand extends AbstractCommand {
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         if (args.getLength() < 1) {
-            return incorrectUsage(event);
+            return incorrectUsage(context, event);
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
             String modInput = args.getJoinedArgs();
-            Mod mod = Mod.getByInfo(context.getWiki(), modInput);
+            Mod mod = Mod.getByInfo(context.wiki(), modInput);
             if (mod != null) {
                 return formatModMessage(channel, mod, null);
             } else if (args.getLength() == 1) {
@@ -68,10 +68,10 @@ public class GetModCommand extends AbstractCommand {
             }
 
             String langInput = args.getArgRange(args.getLength() - 1);
-            Language language = Language.getByCode(context.getWiki(), langInput);
+            Language language = Language.getByCode(context.wiki(), langInput);
 
             modInput = args.getArgRange(0, args.getLength() - 1);
-            mod = Mod.getByInfo(context.getWiki(), modInput);
+            mod = Mod.getByInfo(context.wiki(), modInput);
 
             if (mod == null && language == null) {
                 return formatModDoesntExistMessage(channel, args.getJoinedArgs());

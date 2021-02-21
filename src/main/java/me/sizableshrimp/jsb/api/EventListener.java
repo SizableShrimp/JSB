@@ -25,6 +25,7 @@ package me.sizableshrimp.jsb.api;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.Event;
+import me.sizableshrimp.jsb.Bot;
 import org.fastily.jwiki.core.Wiki;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -43,6 +44,8 @@ public abstract class EventListener<T extends Event> {
     protected abstract Mono<?> execute(Flux<T> onEvent);
 
     public final void register(EventDispatcher dispatcher) {
-        execute(dispatcher.on(eventType)).subscribe();
+        execute(dispatcher.on(this.eventType))
+                .onErrorContinue((error, event) -> Bot.LOGGER.error("Event listener had an uncaught exception!", error))
+                .subscribe();
     }
 }

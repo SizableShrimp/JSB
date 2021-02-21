@@ -32,7 +32,7 @@ import reactor.core.publisher.Mono;
 
 public class FuckCommand extends AbstractCommand {
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname%", "Use it and find out");
     }
 

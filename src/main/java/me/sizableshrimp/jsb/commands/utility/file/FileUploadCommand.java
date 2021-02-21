@@ -24,9 +24,6 @@ package me.sizableshrimp.jsb.commands.utility.file;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.MessageChannel;
-import me.sizableshrimp.jsb.Bot;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.api.ConfirmationCommand;
@@ -47,43 +44,36 @@ import java.util.Set;
 public class FileUploadCommand extends ConfirmationCommand<FileUploadCommand.ConfirmationContext> {
     public FileUploadCommand() {
         super(Map.of(
-                Reactions.CHECKMARK, (confirmation, event) ->
-                        event.getMessage()
-                                .flatMap(Message::getChannel)
-                                .zipWith(event.getClient().getUserById(confirmation.authorId))
-                                .flatMap(tuple -> {
-                                    MessageChannel channel = tuple.getT1();
-                                    User user = tuple.getT2();
+                Reactions.CHECKMARK, (confirmation, event) -> event.getChannel().flatMap(channel -> {
+                    String invalidMessage = getInvalidMessage(confirmation.wiki(), confirmation.destination());
+                    if (invalidMessage != null)
+                        return sendMessage(invalidMessage, channel);
 
-                                    if (confirmation.wiki.exists(confirmation.fullDestination)) {
-                                        return MessageUtil.sendMessage(String.format("That file already exists at <%s>!", getFileLink(confirmation)), channel);
-                                    }
+                    return event.getClient().getUserById(confirmation.authorId()).flatMap(user -> {
+                        AReply reply = confirmation.wiki().uploadByUrl(confirmation.url(), confirmation.destination(), confirmation.pageText(),
+                                "Uploaded file requested by " + MessageUtil.getUsernameDiscriminator(user));
 
-                                    Bot.LOGGER.info("Uploading file URL {} to '{}'", confirmation.url, confirmation.fullDestination);
+                        String message = MessageUtil.getMessageFromReply(reply,
+                                r -> String.format("Uploaded file to <%s>.", reply.getSuccessJson().getAsJsonObject("imageinfo").get("descriptionurl").getAsString()),
+                                r -> "uploading file to " + getFileLink(confirmation));
 
-                                    AReply reply = confirmation.wiki.uploadByUrl(confirmation.url, confirmation.destination, confirmation.pageText,
-                                            "Uploaded file requested by " + MessageUtil.getUsernameDiscriminator(user));
-
-                                    String message = MessageUtil.getMessageFromReply(reply,
-                                            r -> String.format("Uploaded file to <%s>.", reply.getSuccessJson().get("descriptionurl").getAsString()),
-                                            r -> "uploading file to " + getFileLink(confirmation));
-
-                                    return MessageUtil.sendMessage(message, channel);
-                                }),
+                        return sendMessage(message, channel);
+                    });
+                }),
                 Reactions.X, (confirmation, event) -> event.getMessage().flatMap(Message::delete)
-                        .then(event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("Cancelling file upload to <%s>...",
+                        .then(event.getChannel().flatMap(channel -> sendMessage(String.format("Cancelling file upload to <%s>...",
                                 getFileLink(confirmation)), channel)))
         ), List.of(Reactions.CHECKMARK, Reactions.X));
     }
 
     @Override
-    public CommandInfo getInfo() {
-        return new CommandInfo(this, "%cmdname% <file url> <destination> [summary]", """
+    public CommandInfo getInfo(CommandContext context) {
+        return new CommandInfo(this, "%cmdname% <destination> <file url> [page summary]", """
                 Uploads a file to the wiki.
-                Provide the destination without the `File:` prefix but include the file extension. For example, "Image.png".
+                Provide the destination and include the file extension. For example, `Image.png`.
                 Provide an optional summary to be placed on the file page.
 
-                If the destination page has spaces in it and you have added a summary, **wrap in quotes**.
+                If any parameters have a space in them, **wrap in quotes**.
                 """);
     }
 
@@ -105,48 +95,41 @@ public class FileUploadCommand extends ConfirmationCommand<FileUploadCommand.Con
     @Override
     public Mono<?> run(CommandContext context, MessageCreateEvent event, Args args) {
         if (args.getLength() < 2) {
-            return incorrectUsage(event);
+            return incorrectUsage(context, event);
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
-            String file = args.getArg(0);
-            String pageText = args.getLength() >= 3 ? args.getArgRange(2) : "";
+            String file = args.getArg(1);
 
             HttpUrl url = file.startsWith("<") && file.endsWith(">") ? HttpUrl.parse(file.substring(1, file.length() - 1)) : HttpUrl.parse(file);
             if (url == null) {
                 return sendMessage("The file URL provided is invalid!", channel);
             }
 
-            String destination = args.getArg(1).replaceAll("^File:", "");
-            String fullDestination = "File:" + destination;
-            if (context.getWiki().exists(fullDestination)) {
-                String fileLink = WikiUtil.getBaseWikiPageUrl(context.getWiki(), fullDestination);
-                return MessageUtil.sendMessage(String.format("That file already exists at <%s>!", fileLink), channel);
+            String destination = context.wiki().normalizeTitle(args.getArg(0).startsWith("File:") ? args.getArg(0) : "File:" + args.getArg(0));
+            if (context.wiki().exists(destination)) {
+                String fileLink = WikiUtil.getBaseWikiPageUrl(context.wiki(), destination);
+                return sendMessage(String.format("That file already exists at <%s>!", fileLink), channel);
             }
 
-            String message = String.format("Do you want to add a new file to the wiki at **%s**? Please react with ✅ for yes or ❌ for no.", fullDestination);
+            String pageText = args.getLength() > 2 ? args.getArgRange(2) : "";
+            String message = String.format("Do you want to add a new file to the wiki at **%s**?", destination);
 
             return sendMessage(message, channel)
-                    .flatMap(m -> addReactions(m, new ConfirmationContext(context.getWiki(), event.getMessage(), m, url, destination, fullDestination, pageText)));
+                    .flatMap(m -> addReactions(m, new ConfirmationContext(context.wiki(), event.getMessage(), m, url, destination, pageText)));
         });
     }
 
     private static String getFileLink(ConfirmationContext confirmation) {
-        return WikiUtil.getBaseWikiPageUrl(confirmation.wiki, confirmation.fullDestination);
+        return WikiUtil.getBaseWikiPageUrl(confirmation.wiki, confirmation.destination);
     }
 
-    public static final class ConfirmationContext extends BaseConfirmationContext {
-        public final HttpUrl url;
-        public final String destination;
-        public final String fullDestination;
-        public final String pageText;
+    private static String getInvalidMessage(Wiki wiki, String destination) {
+        if (wiki.exists(destination))
+            return String.format("That file already exists at <%s>!", WikiUtil.getBaseWikiPageUrl(wiki, destination));
 
-        public ConfirmationContext(Wiki wiki, Message original, Message response, HttpUrl url, String destination, String fullDestination, String pageText) {
-            super(wiki, original, response);
-            this.url = url;
-            this.destination = destination;
-            this.fullDestination = fullDestination;
-            this.pageText = pageText;
-        }
+        return null;
     }
+
+    public record ConfirmationContext(Wiki wiki, Message original, Message response, HttpUrl url, String destination, String pageText) implements BaseConfirmationContext {}
 }

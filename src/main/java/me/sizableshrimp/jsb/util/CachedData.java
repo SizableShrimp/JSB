@@ -23,56 +23,51 @@
 package me.sizableshrimp.jsb.util;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
- * A Map-like data structure that retrieves data from a {@link Function} and
+ * A data structure that retrieves data from a {@link Supplier} and
  * caches it until it has been cached longer than the set expiration.
  *
- * @param <K> the type of keys
- * @param <V> the type of values
+ * @param <V> the type of the value to store
  */
-public class CachedMap<K, V> {
-    private final Map<K, TimedTuple<V>> map = new HashMap<>();
+public class CachedData<V> {
+    private TimedTuple<V> data;
     private Duration expiration;
     private long cachedExpiration;
 
     /**
-     * Creates a {@link CachedMap} that defaults to expire data after 10 minutes.
+     * Creates a {@link CachedData} that defaults to expire data after 10 minutes.
      */
-    public CachedMap() {
+    public CachedData() {
         this(Duration.ofMinutes(10));
     }
 
     /**
-     * Creates a {@link CachedMap} that expires after the given expiration.
+     * Creates a {@link CachedData} that expires after the given expiration.
      *
      * @param expiration The {@link Duration} until data is expired and retrieved again.
      */
-    public CachedMap(Duration expiration) {
+    public CachedData(Duration expiration) {
         this.expiration = expiration;
         this.cachedExpiration = expiration.toMillis();
     }
 
     /**
-     * Get the cached value in the Map if it exists and has not passed expiration,
-     * otherwise retrieve the value from the {@link Function}.
+     * Get the cached value if it exists and has not passed expiration,
+     * otherwise retrieve the value from the {@link Supplier}.
      *
-     * @param key The key to lookup in the Map.
-     * @param retrieve The {@link Function} called if the data is not cached or has expired.
-     * @return The result cached or retrieved from the {@link Function}.
+     * @param retrieve The {@link Supplier} called if the data is not cached or has expired.
+     * @return The result cached or retrieved from the {@link Supplier}.
      */
-    public V getOrRetrieve(K key, Function<K, V> retrieve) {
-        TimedTuple<V> data = this.map.get(key);
-        if (data == null || data.timestamp() + this.cachedExpiration < System.currentTimeMillis()) {
-            V value = retrieve.apply(key);
-            this.map.put(key, new TimedTuple<>(value));
+    public V getOrRetrieve(Supplier<V> retrieve) {
+        if (this.data == null || this.data.timestamp() + this.cachedExpiration < System.currentTimeMillis()) {
+            V value = retrieve.get();
+            this.data = new TimedTuple<>(value);
             return value;
         }
 
-        return data.value();
+        return this.data.value();
     }
 
     public Duration getExpiration() {

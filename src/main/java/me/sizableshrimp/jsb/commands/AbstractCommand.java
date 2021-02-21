@@ -27,6 +27,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import me.sizableshrimp.jsb.api.Command;
+import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.commands.utility.info.HelpCommand;
 import me.sizableshrimp.jsb.util.MessageUtil;
 import reactor.core.publisher.Mono;
@@ -35,8 +36,12 @@ import java.util.function.Consumer;
 
 public abstract class AbstractCommand implements Command {
     // Helper functions
-    protected final Mono<Message> incorrectUsage(MessageCreateEvent event) {
-        return event.getMessage().getChannel().flatMap(c -> sendEmbed(HelpCommand.display(event, this), c));
+    protected final Mono<Message> incorrectUsage(CommandContext context, MessageCreateEvent event) {
+        return event.getMessage().getChannel().flatMap(c -> sendEmbed(HelpCommand.display(event, this, context), c));
+    }
+
+    protected final Mono<Message> incorrectUsage(String message, CommandContext context, MessageCreateEvent event) {
+        return event.getMessage().getChannel().flatMap(c -> sendMessage(message, HelpCommand.display(event, this, context), c));
     }
 
     protected static Mono<Message> sendMessage(String message, MessageChannel channel) {

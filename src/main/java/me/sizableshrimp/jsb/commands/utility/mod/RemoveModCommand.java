@@ -47,7 +47,7 @@ public class RemoveModCommand extends ConfirmationCommand<RemoveModCommand.Confi
     public RemoveModCommand() {
         super(Map.of(
                 Reactions.X, (confirmation, event) -> {
-                    Mod toDelete = confirmation.toDelete;
+                    Mod toDelete = confirmation.toDelete();
 
                     try {
                         AReply reply = toDelete.remove();
@@ -57,18 +57,18 @@ public class RemoveModCommand extends ConfirmationCommand<RemoveModCommand.Confi
                                     toDelete.getName(), toDelete.getAbbrv());
                         }, r -> "deleting mod " + toDelete.getAbbrv());
 
-                        return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(message, channel));
+                        return event.getChannel().flatMap(channel -> sendMessage(message, channel));
                     } catch (IllegalStateException e) {
-                        return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(e.getMessage(), channel));
+                        return event.getChannel().flatMap(channel -> sendMessage(e.getMessage(), channel));
                     }
                 }, Reactions.WASTEBASKET, (confirmation, event) -> event.getMessage().flatMap(Message::delete)
-                        .then(event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("Cancelling deletion of mod named **%s** with abbreviation `%s`...",
-                                confirmation.toDelete.getName(), confirmation.toDelete.getAbbrv()), channel)))
+                        .then(event.getChannel().flatMap(channel -> sendMessage(String.format("Cancelling deletion of mod named **%s** with abbreviation `%s`...",
+                                confirmation.toDelete().getName(), confirmation.toDelete().getAbbrv()), channel)))
         ), List.of(Reactions.X, Reactions.WASTEBASKET));
     }
 
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname% <mod name|mod abbreviation>", """
                 Removes a mod from the mod list which takes either the mod abbreviation or unlocalized mod name.
                 """);
@@ -92,11 +92,11 @@ public class RemoveModCommand extends ConfirmationCommand<RemoveModCommand.Confi
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         if (args.getLength() < 1) {
-            return incorrectUsage(event);
+            return incorrectUsage(context, event);
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
-            Mod toDelete = Mod.getByInfo(context.getWiki(), args.getJoinedArgs());
+            Mod toDelete = Mod.getByInfo(context.wiki(), args.getJoinedArgs());
             if (toDelete == null) {
                 return sendMessage("That mod doesn't exist!", channel);
             }
@@ -113,16 +113,9 @@ public class RemoveModCommand extends ConfirmationCommand<RemoveModCommand.Confi
                                         + REACT_WITH, toDelete.getName(), toDelete.getAbbrv()),
                         channel);
             }
-            return confirm.flatMap(m -> addReactions(m, new ConfirmationContext(context.getWiki(), event.getMessage(), m, toDelete)));
+            return confirm.flatMap(m -> addReactions(m, new ConfirmationContext(context.wiki(), event.getMessage(), m, toDelete)));
         });
     }
 
-    public static final class ConfirmationContext extends BaseConfirmationContext {
-        public final Mod toDelete;
-
-        public ConfirmationContext(Wiki wiki, Message original, Message response, Mod toDelete) {
-            super(wiki, original, response);
-            this.toDelete = toDelete;
-        }
-    }
+    public record ConfirmationContext(Wiki wiki, Message original, Message response, Mod toDelete) implements BaseConfirmationContext {}
 }

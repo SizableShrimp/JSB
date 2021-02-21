@@ -35,7 +35,7 @@ import java.util.Set;
 
 public class ExitCommand extends AbstractCommand {
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname%", "Exit the program");
     }
 

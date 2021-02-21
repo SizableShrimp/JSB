@@ -59,14 +59,14 @@ public class CommandManager {
     public Mono<Void> executeCommand(MessageCreateEvent event) {
         Args args = ArgsProcessor.processWithPrefix(event.getMessage().getContent());
         if (args == null) {
-            args = ArgsProcessor.processWithPrefixRegex(mentionPrefix, event.getMessage().getContent());
+            args = ArgsProcessor.processWithPrefixRegex(this.mentionPrefix, event.getMessage().getContent());
         }
         if (args == null) {
             return Mono.empty();
         }
         Args finalArgs = args;
 
-        Command command = commandMap.get(args.getName());
+        Command command = this.commandMap.get(args.getName());
 
         if (command == null) {
             return Mono.empty();
@@ -74,16 +74,16 @@ public class CommandManager {
 
         return event.getMessage().getChannel().flatMap(MessageChannel::type)
                 .then(requireRoles(event, command.getRequiredRoles()))
-                .flatMap(b -> command.run(new CommandContext(this, wiki), event, finalArgs)).then()
+                .flatMap(b -> command.run(new CommandContext(this, this.wiki), event, finalArgs)).then()
                 .onErrorResume(NoPermissionException.class, noperms -> event.getMessage().getChannel()
                         .flatMap(channel -> MessageUtil.sendMessage(noperms.getMessage(), channel)).then());
     }
 
     public void loadCommands() {
-        this.commands = CommandLoader.loadClasses(Command.class, new Class[0], new Object[0]);
+        this.commands = CommandLoader.loadClasses(Command.class, null, null);
 
-        commandMap.clear();
-        for (Command command : commands) {
+        this.commandMap.clear();
+        for (Command command : this.commands) {
             for (String alias : command.getAliases()) {
                 addCommand(alias, command);
             }
@@ -92,10 +92,10 @@ public class CommandManager {
     }
 
     private void addCommand(String name, Command command) {
-        Command prev = commandMap.put(name, command);
+        Command prev = this.commandMap.put(name, command);
         if (prev != null) {
             LOGGER.error("Encountered a duplicate alias \"{}\" for {} and {}", name, command.getClass(), prev.getClass());
-            commandMap.remove(name);
+            this.commandMap.remove(name);
         }
     }
 

@@ -26,6 +26,7 @@ import discord4j.common.GitProperties;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
 import me.sizableshrimp.jsb.Bot;
 import me.sizableshrimp.jsb.api.CommandContext;
@@ -41,7 +42,7 @@ import java.util.function.Consumer;
 
 public class InfoCommand extends AbstractCommand {
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname%", "Displays information about the bot including uptime, author, and how the bot was made.");
     }
 
@@ -53,7 +54,7 @@ public class InfoCommand extends AbstractCommand {
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         return event.getClient().getUserById(Snowflake.of(Bot.getConfig().getOwnerId()))
-                .map(u -> u.getUsername() + "#" + u.getDiscriminator())
+                .map(User::getMention)
                 .map(InfoCommand::getEmbed)
                 .zipWith(event.getMessage().getChannel())
                 .flatMap(tuple -> sendMessage("To learn my commands, use `" + Bot.getConfig().getPrefix() + "help`", tuple.getT1(), tuple.getT2()));
@@ -69,6 +70,7 @@ public class InfoCommand extends AbstractCommand {
             embed.setAuthor("Information", null, null);
             embed.setDescription(description);
             embed.addField("Discord4J Version", GitProperties.getProperties().getProperty(GitProperties.APPLICATION_VERSION), true);
+            embed.addField("Source", "[https://github.com/SizableShrimp/JSB](SizableShrimp/JSB on Github)", false);
             embed.addField("Prefix", '`' + Bot.getConfig().getPrefix() + '`', false);
             embed.addField("Uptime", getUptime(), false);
         };

@@ -25,6 +25,7 @@ package me.sizableshrimp.jsb.args;
 import java.util.Arrays;
 
 public final class Args {
+    public static final String NO_BOOLEAN_MESSAGE = "The **%s** parameter should be one of `true`, `t`, or `1` for **true** or one of `false`, `f`, or `0` for **false**.";
     private final String name;
     private final String[] args;
     private final String joinedArgs;
@@ -36,13 +37,20 @@ public final class Args {
     }
 
     public String getArg(int index) {
-        return args[index];
+        return this.args[index];
     }
 
     public String getArgNullable(int index) {
         if (index < 0 || index >= getLength())
             return null;
-        return args[index];
+        return this.args[index];
+    }
+
+    public boolean isArgValidBoolean(int index) {
+        String arg = getArgNullable(index);
+        if (arg == null)
+            return false;
+        return isTrue(arg) || isFalse(arg);
     }
 
     public boolean getArgAsBoolean(int index) {
@@ -54,7 +62,11 @@ public final class Args {
     }
 
     private static boolean isTrue(String arg) {
-        return "true".equalsIgnoreCase(arg) || "t".equals(arg) || "1".equalsIgnoreCase(arg);
+        return "true".equalsIgnoreCase(arg) || "t".equalsIgnoreCase(arg) || "1".equalsIgnoreCase(arg);
+    }
+
+    private static boolean isFalse(String arg) {
+        return "false".equalsIgnoreCase(arg) || "f".equalsIgnoreCase(arg) || "0".equalsIgnoreCase(arg);
     }
 
     /**
@@ -64,7 +76,7 @@ public final class Args {
      * @return
      */
     public String getArgRange(int startInclusive) {
-        return getArgRange(startInclusive, args.length);
+        return getArgRange(startInclusive, this.args.length);
     }
 
     /**
@@ -75,7 +87,7 @@ public final class Args {
      * @return All arguments in this range joined by a space.
      */
     public String getArgRange(int startInclusive, int endExclusive) {
-        return String.join(" ", Arrays.copyOfRange(args, startInclusive, endExclusive));
+        return String.join(" ", Arrays.copyOfRange(this.args, startInclusive, endExclusive));
     }
 
     /**
@@ -92,13 +104,13 @@ public final class Args {
         int result = 0;
 
         for (int i = 0; i < spaces; i++) {
-            result = joinedArgs.indexOf(' ', result);
+            result = this.joinedArgs.indexOf(' ', result);
             if (result == -1)
                 throw new IllegalStateException("Too many spaces");
             result += 1;
         }
 
-        return joinedArgs.substring(result);
+        return this.joinedArgs.substring(result);
     }
 
     /**
@@ -112,15 +124,15 @@ public final class Args {
      * continuing to the end of the string.
      */
     public String getBeforeSpace(int spaces) {
-        int result = joinedArgs.length();
+        int result = this.joinedArgs.length();
 
         for (int i = 0; i < spaces; i++) {
-            result = joinedArgs.lastIndexOf(' ', result - 1);
+            result = this.joinedArgs.lastIndexOf(' ', result - 1);
             if (result == -1)
                 throw new IllegalStateException("Too many spaces");
         }
 
-        return joinedArgs.substring(result);
+        return this.joinedArgs.substring(result);
     }
 
     /**
@@ -129,11 +141,11 @@ public final class Args {
      * @return The length of the arguments, excluding the {@code name}.
      */
     public int getLength() {
-        return args.length;
+        return this.args.length;
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 
     /**
@@ -142,6 +154,6 @@ public final class Args {
      * @return all arguments joined by a space, excluding the {@code name}.
      */
     public String getJoinedArgs() {
-        return joinedArgs;
+        return this.joinedArgs;
     }
 }

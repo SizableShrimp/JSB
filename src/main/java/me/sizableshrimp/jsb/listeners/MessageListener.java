@@ -24,7 +24,6 @@ package me.sizableshrimp.jsb.listeners;
 
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import me.sizableshrimp.jsb.Bot;
 import me.sizableshrimp.jsb.api.CommandManager;
 import me.sizableshrimp.jsb.api.EventListener;
 import me.sizableshrimp.jsb.util.MessageUtil;
@@ -45,7 +44,6 @@ public class MessageListener extends EventListener<MessageCreateEvent> {
         return onEvent
                 .filterWhen(MessageUtil::canReply)
                 .flatMap(this.commandManager::executeCommand)
-                .onErrorContinue((error, event) -> Bot.LOGGER.error("Message listener had an uncaught exception!", error))
                 .then();
     }
 }

@@ -64,13 +64,13 @@ public class DiscordConfiguration {
      *
      * @param prefix The prefix to use when setting the presence.
      * @param token The token of the discord bot.
-     * @param isDebugMode If true, will not update the avatar as during debugging this may be done too fast and cause errors.
+     * @param inDebugMode If true, will not update the avatar as during debugging this may be done too fast and cause errors.
      * @param consumer A consumer to use the joined {@link GatewayDiscordClient}
      * containing all shards immediately after login.
      * @return A {@link Mono} that signals completion when all shards have
      * disconnected.
      */
-    public static Mono<Void> login(String prefix, String token, boolean isDebugMode, Consumer<GatewayDiscordClient> consumer) {
+    public static Mono<Void> login(String prefix, String token, boolean inDebugMode, Consumer<GatewayDiscordClient> consumer) {
         Image image = getImage();
 
         return DiscordClient.create(token).gateway()
@@ -78,7 +78,7 @@ public class DiscordConfiguration {
                         client -> Presence.online(Activity.watching(prefix + "help for help")))
                 .withGateway(client ->
                         Mono.just(client)
-                                .flatMap(c -> image == null || isDebugMode ? Mono.just(c) : c.edit(u -> u.setAvatar(image)).thenReturn(c))
+                                .flatMap(c -> image == null || inDebugMode ? Mono.just(c) : c.edit(u -> u.setAvatar(image)).thenReturn(c))
                                 .doOnNext(consumer)
                                 .flatMap(GatewayDiscordClient::onDisconnect));
     }

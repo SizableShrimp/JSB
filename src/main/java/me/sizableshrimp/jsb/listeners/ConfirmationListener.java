@@ -42,13 +42,14 @@ public class ConfirmationListener extends EventListener<ReactionAddEvent> {
 
     @Override
     protected Mono<Void> execute(Flux<ReactionAddEvent> onEvent) {
-        return onEvent.flatMap(e -> {
-            for (ConfirmationManager<?> manager : managers) {
-                if (manager.isValid(e))
-                    return manager.execute(e);
-            }
+        return onEvent.filter(e -> !e.getUserId().equals(e.getClient().getSelfId()))
+                .flatMap(e -> {
+                    for (ConfirmationManager<?> manager : managers) {
+                        if (manager.isValid(e))
+                            return manager.execute(e);
+                    }
 
-            return Mono.empty();
-        }).then();
+                    return Mono.empty();
+                }).then();
     }
 }

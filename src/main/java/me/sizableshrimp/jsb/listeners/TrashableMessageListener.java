@@ -27,7 +27,6 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.object.entity.Message;
-import me.sizableshrimp.jsb.Bot;
 import me.sizableshrimp.jsb.api.EventListener;
 import me.sizableshrimp.jsb.util.MessageUtil;
 import me.sizableshrimp.jsb.util.Reactions;
@@ -54,7 +53,6 @@ public abstract class TrashableMessageListener extends EventListener<MessageCrea
                 .flatMap(this::genMessage)
                 .flatMap(m -> m.addReaction(Reactions.WASTEBASKET).thenReturn(m))
                 .doOnNext(m -> messages.add(m.getId()))
-                .onErrorContinue((error, event) -> Bot.LOGGER.error("Event listener had an uncaught exception!", error))
                 .then();
     }
 

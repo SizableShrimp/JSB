@@ -22,25 +22,15 @@
 
 package me.sizableshrimp.jsb.api;
 
-import discord4j.core.event.domain.message.MessageCreateEvent;
-import me.sizableshrimp.jsb.args.Args;
-import reactor.core.publisher.Mono;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import java.util.List;
-import java.util.Set;
-
-public interface Command {
-    CommandInfo getInfo(CommandContext context);
-
-    String getName();
-
-    default Set<String> getAliases() {
-        return Set.of();
-    }
-
-    default List<String> getRequiredRoles() {
-        return List.of();
-    }
-
-    Mono<?> run(CommandContext context, MessageCreateEvent event, Args args);
+/**
+ * Marks a command as enabled only in a debugging environment.
+ */
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface DebugOnlyCommand {
 }

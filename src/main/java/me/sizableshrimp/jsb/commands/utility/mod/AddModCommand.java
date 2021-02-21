@@ -48,7 +48,7 @@ public class AddModCommand extends ConfirmationCommand<AddModCommand.Confirmatio
     public AddModCommand() {
         super(Map.of(
                 Reactions.CHECKMARK, (confirmation, event) -> {
-                    Mod newMod = confirmation.newMod;
+                    Mod newMod = confirmation.newMod();
 
                     try {
                         AReply reply = newMod.add();
@@ -57,18 +57,18 @@ public class AddModCommand extends ConfirmationCommand<AddModCommand.Confirmatio
                             return String.format("Added **%s** (abbreviated as `%s`) to the mods list. Please mark for translation.", newMod.getName(), newMod.getAbbrv());
                         }, r -> "adding mod " + newMod.getAbbrv());
 
-                        return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(message, channel));
+                        return event.getChannel().flatMap(channel -> sendMessage(message, channel));
                     } catch (IllegalStateException e) {
-                        return event.getChannel().flatMap(channel -> MessageUtil.sendMessage(e.getMessage(), channel));
+                        return event.getChannel().flatMap(channel -> sendMessage(e.getMessage(), channel));
                     }
                 }, Reactions.X, (confirmation, event) -> event.getMessage().flatMap(Message::delete)
-                        .then(event.getChannel().flatMap(channel -> MessageUtil.sendMessage(String.format("Cancelling addition of mod named **%s** with abbreviation `%s`...",
-                                confirmation.newMod.getName(), confirmation.newMod.getAbbrv()), channel)))
+                        .then(event.getChannel().flatMap(channel -> sendMessage(String.format("Cancelling addition of mod named **%s** with abbreviation `%s`...",
+                                confirmation.newMod().getName(), confirmation.newMod().getAbbrv()), channel)))
         ), List.of(Reactions.CHECKMARK, Reactions.X));
     }
 
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname% <mod abbreviation> <mod name> [mod page]", """
                 Adds a mod to the mod list which takes a mod abbreviation and the unlocalized mod name.
                 Optionally takes a mod page link if it differs from the unlocalized mod name.
@@ -94,7 +94,7 @@ public class AddModCommand extends ConfirmationCommand<AddModCommand.Confirmatio
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         if (args.getLength() < 2 || args.getLength() > 3) {
-            return incorrectUsage(event);
+            return incorrectUsage(context, event);
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
@@ -110,7 +110,7 @@ public class AddModCommand extends ConfirmationCommand<AddModCommand.Confirmatio
                 return sendMessage("Mod abbreviation cannot start with a number!", channel);
             }
 
-            Mod newMod = new Mod(context.getWiki(), modAbbrv, modName, modPage);
+            Mod newMod = new Mod(context.wiki(), modAbbrv, modName, modPage);
             Mod conflict = newMod.getConflict();
             if (conflict != null) {
                 return sendMessage(
@@ -121,24 +121,17 @@ public class AddModCommand extends ConfirmationCommand<AddModCommand.Confirmatio
                 Mono<Message> confirm;
                 if (newMod.hasDistinctLink()) {
                     confirm = sendMessage(String.format(
-                            "Do you want to add a new mod to the list named **%s** with abbreviation `%s` and link `%s`? Please react with ✅ for yes or ❌ for no.",
+                            "Do you want to add a new mod to the list named **%s** with abbreviation `%s` and link `%s`?",
                             newMod.getName(), newMod.getAbbrv(), newMod.getUrlLink()), channel);
                 } else {
                     confirm = sendMessage(String.format(
-                            "Do you want to add a new mod to the list named **%s** with abbreviation `%s`? Please react with ✅ for yes or ❌ for no.",
+                            "Do you want to add a new mod to the list named **%s** with abbreviation `%s`?",
                             newMod.getName(), newMod.getAbbrv()), channel);
                 }
-                return confirm.flatMap(m -> addReactions(m, new ConfirmationContext(context.getWiki(), event.getMessage(), m, newMod)));
+                return confirm.flatMap(m -> addReactions(m, new ConfirmationContext(context.wiki(), event.getMessage(), m, newMod)));
             }
         });
     }
 
-    public static final class ConfirmationContext extends BaseConfirmationContext {
-        public final Mod newMod;
-
-        public ConfirmationContext(Wiki wiki, Message original, Message response, Mod newMod) {
-            super(wiki, original, response);
-            this.newMod = newMod;
-        }
-    }
+    public record ConfirmationContext(Wiki wiki, Message original, Message response, Mod newMod) implements BaseConfirmationContext {}
 }

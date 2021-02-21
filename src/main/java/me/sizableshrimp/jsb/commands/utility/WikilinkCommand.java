@@ -39,7 +39,7 @@ public class WikilinkCommand extends AbstractCommand {
     private static final Pattern SPECIAL_PAGE = Pattern.compile("^:?Special:");
 
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname% <page>", """
                 Provides a link to the page and states whether it exists.
                 Provide the page name without brackets.
@@ -59,12 +59,12 @@ public class WikilinkCommand extends AbstractCommand {
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         if (args.getLength() < 1 || args.getJoinedArgs().indexOf('[') != -1 || args.getJoinedArgs().indexOf(']') != -1) {
-            return incorrectUsage(event);
+            return incorrectUsage(context, event);
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
             String link = args.getJoinedArgs();
-            String message = genWikilink(context.getWiki(), link);
+            String message = genWikilink(context.wiki(), link);
             return sendMessage(message, channel);
         });
     }

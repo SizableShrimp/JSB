@@ -35,7 +35,7 @@ import java.util.Set;
 
 public class GetLanguageCommand extends AbstractCommand {
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname% <language info>",
                 "Get a language using its language code, language name, or localized language name and display information about it.");
     }
@@ -53,12 +53,12 @@ public class GetLanguageCommand extends AbstractCommand {
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         if (args.getLength() < 1) {
-            return incorrectUsage(event);
+            return incorrectUsage(context, event);
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
             String langInput = args.getJoinedArgs();
-            Language language = Language.getByInfo(context.getWiki(), langInput);
+            Language language = Language.getByInfo(context.wiki(), langInput);
             
             String formatted;
             if (language != null) {

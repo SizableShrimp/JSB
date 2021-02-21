@@ -38,6 +38,7 @@ public class WikilinkListener extends TrashableMessageListener {
     // # is not legal, but we need to support section links
     private static final String LEGAL_CHARS = "[ #%!\"$&'()*,\\-./0-9:;=?@A-Z\\\\^_`a-z~\\x80-\\xFF+\\w]";
     private static final Pattern WIKILINK = Pattern.compile("\\[\\[(" + LEGAL_CHARS + "+)(?:\\|(.+))?]]", Pattern.UNICODE_CHARACTER_CLASS);
+    private static final Pattern CODE_BLOCK = Pattern.compile("```.+?```", Pattern.DOTALL);
     private static final int MAX_LINKS = 5;
 
     public WikilinkListener(GatewayDiscordClient client, Wiki wiki) {
@@ -46,7 +47,7 @@ public class WikilinkListener extends TrashableMessageListener {
 
     protected Mono<Message> genMessage(MessageCreateEvent event) {
         return Mono.just(event.getMessage().getContent())
-                .filter(m -> !m.contains("```"))
+                .map(m -> m.contains("```") ? CODE_BLOCK.matcher(m).replaceAll("") : m)
                 .map(WIKILINK::matcher)
                 .filter(Matcher::find)
                 .flatMap(m -> event.getMessage().getChannel().flatMap(MessageChannel::type).thenReturn(m))
@@ -55,7 +56,7 @@ public class WikilinkListener extends TrashableMessageListener {
                     int i = 0;
 
                     do {
-                        WikilinkCommand.genWikilink(builder, wiki, matcher.group(1));
+                        WikilinkCommand.genWikilink(builder, this.wiki, matcher.group(1));
                     } while (matcher.find() && i++ < MAX_LINKS);
 
                     return builder.toString();

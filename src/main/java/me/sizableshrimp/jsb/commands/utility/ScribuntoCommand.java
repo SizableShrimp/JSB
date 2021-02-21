@@ -39,7 +39,7 @@ import java.util.Set;
 
 public class ScribuntoCommand extends AbstractCommand {
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname% <module name> <code>", """
                 Allows executing custom code from Scribunto modules.
                 The module name should be the name of the module, with or without the `Module:` namespace.
@@ -66,14 +66,14 @@ public class ScribuntoCommand extends AbstractCommand {
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         if (args.getLength() < 2) {
-            return incorrectUsage(event);
+            return incorrectUsage(context, event);
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
             String module = args.getArg(0);
             String codeToExecute = event.getMessage().getContent();
             codeToExecute = codeToExecute.substring(codeToExecute.indexOf(' ', codeToExecute.indexOf(module) + module.length()) + 1).trim();
-            Scribunto scrib = Scribunto.runScribuntoCode(context.getWiki(), module, codeToExecute);
+            Scribunto scrib = Scribunto.runScribuntoCode(context.wiki(), module, codeToExecute);
             JsonObject json = scrib.getResponseJson();
             if (json == null) {
                 return sendMessage("`" + module + "` does not exist", channel);
@@ -94,7 +94,7 @@ public class ScribuntoCommand extends AbstractCommand {
                 } else {
                     builder.append("No value was returned from the module.");
                 }
-                return sendMessage("```lua\n" + builder.toString() + "```", channel);
+                return sendMessage("```lua\n" + builder + "```", channel);
             } else if ("error".equals(type)) {
                 return sendMessage("An error occurred: " + printJson(json), channel);
             } else if (type == null) {

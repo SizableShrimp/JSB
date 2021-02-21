@@ -26,14 +26,16 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Message;
 import org.fastily.jwiki.core.Wiki;
 
-public abstract class BaseConfirmationContext {
-    public final Wiki wiki;
-    public final Snowflake authorId;
-    public final Snowflake messageId;
+public interface BaseConfirmationContext {
+    Wiki wiki();
+    Message original();
+    Message response();
 
-    protected BaseConfirmationContext(Wiki wiki, Message original, Message response) {
-        this.wiki = wiki;
-        this.authorId = original.getAuthor().get().getId();
-        this.messageId = response.getId();
+    default Snowflake authorId() {
+        return original().getAuthor().get().getId();
+    }
+
+    default Snowflake messageId() {
+        return response().getId();
     }
 }

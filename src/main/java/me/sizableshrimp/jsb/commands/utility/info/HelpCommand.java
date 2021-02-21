@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 
 public class HelpCommand extends AbstractCommand {
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname% [command]", "Use `%prefix%help [command]` to find out more information about each command.");
     }
 
@@ -62,23 +62,23 @@ public class HelpCommand extends AbstractCommand {
         }
 
         String inputCmd = args.getArg(0).toLowerCase();
-        Command selected = context.getCommandManager().getCommandMap().get(inputCmd);
+        Command selected = context.commandManager().getCommandMap().get(inputCmd);
         if (selected == null) {
             return displayHelp(context, event);
         }
-        return event.getMessage().getChannel().flatMap(channel -> sendEmbed(display(inputCmd, selected), channel));
+        return event.getMessage().getChannel().flatMap(channel -> sendEmbed(display(inputCmd, selected, context), channel));
     }
 
-    public static Consumer<EmbedCreateSpec> display(MessageCreateEvent event, Command command) {
-        return display(ArgsProcessor.processWithPrefix(event.getMessage().getContent()).getName(), command);
+    public static Consumer<EmbedCreateSpec> display(MessageCreateEvent event, Command command, CommandContext context) {
+        return display(ArgsProcessor.processWithPrefix(event.getMessage().getContent()).getName(), command, context);
     }
 
-    public static Consumer<EmbedCreateSpec> display(String inputCmd, Command command) {
+    public static Consumer<EmbedCreateSpec> display(String inputCmd, Command command, CommandContext context) {
         String commandName = command.getClass().getSimpleName()
                 .replace("Command", "")
                 .replaceAll("([^A-Z])([A-Z][^A-Z])", "$1 $2")
                 .trim();
-        CommandInfo commandInfo = command.getInfo();
+        CommandInfo commandInfo = command.getInfo(context);
 
         String usage = Bot.getConfig().getPrefix() + commandInfo.getUsage(inputCmd);
         String description = commandInfo.getDescription(Bot.getConfig().getPrefix());
@@ -99,12 +99,12 @@ public class HelpCommand extends AbstractCommand {
     }
 
     private Mono<Message> displayHelp(CommandContext context, MessageCreateEvent event) {
-        List<String> names = context.getCommandManager().getCommands().stream()
+        List<String> names = context.commandManager().getCommands().stream()
                 .map(Command::getName)
                 .sorted()
                 .collect(Collectors.toList());
 
-        Consumer<EmbedCreateSpec> spec = display("help", this)
+        Consumer<EmbedCreateSpec> spec = display("help", this, context)
                 .andThen(embed -> embed.addField("Commands", String.join(", ", names), false));
         return event.getMessage().getChannel().flatMap(c -> sendEmbed(spec, c));
     }

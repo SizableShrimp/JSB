@@ -66,7 +66,7 @@ public class GetGridCellCommand extends AbstractCommand {
     private final CachedMap<String, Set<Integer>> cachedSizes = new CachedMap<>();
 
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname% <mod abbreviation> <item name>", """
                 Get a grid cell from the specified mod.
                 """);
@@ -85,20 +85,20 @@ public class GetGridCellCommand extends AbstractCommand {
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         if (args.getLength() < 2) {
-            return incorrectUsage(event);
+            return incorrectUsage(context, event);
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
             String modAbbrv = args.getArg(0);
-            Mod mod = Mod.getByAbbreviation(context.getWiki(), modAbbrv);
+            Mod mod = Mod.getByAbbreviation(context.wiki(), modAbbrv);
             if (mod == null) {
                 return GetModCommand.formatModDoesntExistMessage(channel, modAbbrv);
             }
 
             String item = args.getArgRange(1);
 
-            Set<Integer> sizes = cachedSizes.getOrRetrieve(mod.getAbbrv(), k -> {
-                List<JsonObject> reply = new WQuery(context.getWiki(), 1, LIST_TILESHEETS).set("tsfrom", k).next().listComp("tilesheets");
+            Set<Integer> sizes = this.cachedSizes.getOrRetrieve(mod.getAbbrv(), k -> {
+                List<JsonObject> reply = new WQuery(context.wiki(), 1, LIST_TILESHEETS).set("tsfrom", k).next().listComp("tilesheets");
                 if (reply.isEmpty())
                     return null;
                 Set<Integer> result = new HashSet<>();
@@ -114,12 +114,12 @@ public class GetGridCellCommand extends AbstractCommand {
                 return sendMessage(String.format("A **%s** tilesheet could not be found.", mod.getAbbrv()), channel);
             }
             int size = sizes.stream().mapToInt(i -> i).max().getAsInt();
-            Map<String, Tile> tiles = cachedTiles.getOrRetrieve(mod.getAbbrv(), k -> {
-                List<JsonObject> reply = WikiUtil.getQueryRepliesAsList(LIST_TILES.createQuery(context.getWiki()).set("tsmod", k), "tiles");
+            Map<String, Tile> tiles = this.cachedTiles.getOrRetrieve(mod.getAbbrv(), k -> {
+                List<JsonObject> reply = WikiUtil.getQueryRepliesAsList(LIST_TILES.createQuery(context.wiki()).set("tsmod", k), "tiles");
                 Map<String, Tile> result = new HashMap<>();
                 for (JsonObject obj : reply) {
                     Tile tile = Bot.GSON.fromJson(obj, Tile.class);
-                    result.put(tile.name.toLowerCase(), tile);
+                    result.put(tile.name().toLowerCase(), tile);
                 }
                 return result;
             });
@@ -129,7 +129,7 @@ public class GetGridCellCommand extends AbstractCommand {
             }
 
             String file = String.format("File:Tilesheet %s %d %d.png", mod.getAbbrv(), size, selected.z);
-            String fileUrl = WikiUtil.getLatestFileUrl(context.getWiki(), file);
+            String fileUrl = WikiUtil.getLatestFileUrl(context.wiki(), file);
             if (fileUrl == null)
                 return sendMessage(String.format("The tilesheet file `%s` doesn't exist!", file), channel);
 
@@ -137,13 +137,13 @@ public class GetGridCellCommand extends AbstractCommand {
             if (image == null)
                 return sendMessage("An error occurred when attempting to retrieve the tilesheet. Please try again later.", channel);
 
-            String disambiguated = String.format("%s (%s)", selected.name, mod.getName());
-            String page = context.getWiki().exists(disambiguated) ? disambiguated : selected.name;
-            String pageUrl = WikiUtil.getBaseWikiPageUrl(context.getWiki(), page);
-            String attachment = selected.name.replace(' ', '_') + ".png";
+            String disambiguated = String.format("%s (%s)", selected.name(), mod.getName());
+            String page = context.wiki().exists(disambiguated) ? disambiguated : selected.name();
+            String pageUrl = WikiUtil.getBaseWikiPageUrl(context.wiki(), page);
+            String attachment = selected.name().replace(' ', '_') + ".png";
             return channel.createMessage(mSpec -> mSpec.addFile(attachment, image)
                     .setEmbed(eSpec -> eSpec.setImage("attachment://" + attachment)
-                            .setTitle(selected.name)
+                            .setTitle(selected.name())
                             .setUrl(pageUrl)
                             .setFooter("Retrieved by JSB with love ❤", null)));
         });
@@ -181,12 +181,5 @@ public class GetGridCellCommand extends AbstractCommand {
         }
     }
 
-    public static final class Tile {
-        private long id;
-        private String mod;
-        private String name;
-        private int x;
-        private int y;
-        private int z;
-    }
+    public record Tile(long id, String mod, String name, int x, int y, int z) {}
 }

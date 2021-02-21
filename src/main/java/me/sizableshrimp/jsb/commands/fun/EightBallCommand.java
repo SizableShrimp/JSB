@@ -71,7 +71,7 @@ public class EightBallCommand extends AbstractCommand {
             "Forget about it, cracker.");
 
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname%", "Tells you your fortune!");
     }
 

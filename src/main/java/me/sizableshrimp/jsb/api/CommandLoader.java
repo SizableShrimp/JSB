@@ -40,12 +40,16 @@ import java.util.Set;
 public final class CommandLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandLoader.class);
     private static final Reflections REFLECTIONS = new Reflections(Bot.class.getPackageName());
+    private static final Object[] EMPTY_INIT_ARGS = new Object[0];
+    private static final Class[] EMPTY_PARAMETER_TYPES = new Class[0];
 
     private CommandLoader() {}
 
     /**
      * Dynamically instantiates all classes that inherit from the {@code token} type T,
-     * ignoring classes that are annotated with {@link DisabledCommand}.
+     * ignoring classes that are annotated with {@link DisabledCommand} or {@link DebugOnlyCommand}.
+     * If a debug environment is detected where the "DEBUG" environment variable is non-null,
+     * commands annotated with {@link DebugOnlyCommand} will be loaded.
      *
      * @param token The token type T used to load subclasses.
      * @param parameterTypes The array of parameter types used when finding the constructor.
@@ -53,11 +57,18 @@ public final class CommandLoader {
      * @return An unmodifiable set of instantiated objects derived from the superclass {@code T}.
      */
     public static <T> Set<T> loadClasses(Class<T> token, Class<?>[] parameterTypes, Object[] initArgs) {
+        if (parameterTypes == null)
+            parameterTypes = EMPTY_PARAMETER_TYPES;
+        if (initArgs == null)
+            initArgs = EMPTY_INIT_ARGS;
         Set<Class<? extends T>> commands = REFLECTIONS.getSubTypesOf(token);
         Set<T> instances = new HashSet<>();
+        boolean inDebugEnv = Bot.IN_DEBUG_MODE;
 
         for (Class<? extends T> clazz : commands) {
-            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isAnnotationPresent(DisabledCommand.class)) {
+            if (Modifier.isAbstract(clazz.getModifiers())
+                    || clazz.isAnnotationPresent(DisabledCommand.class)
+                    || (!inDebugEnv && clazz.isAnnotationPresent(DebugOnlyCommand.class))) {
                 continue;
             }
             try {

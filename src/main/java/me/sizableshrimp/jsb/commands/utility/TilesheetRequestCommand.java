@@ -46,7 +46,7 @@ public class TilesheetRequestCommand extends AbstractCommand {
     private static final String FOOTER = "\n\n\n<!--Do not edit below this line.-->\n{{Navbox portals}}";
 
     @Override
-    public CommandInfo getInfo() {
+    public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname% <mod info> <link>", """
                 Adds a tilesheet request to [FTBW:Tilesheet requests](https://ftb.gamepedia.com/FTBW:Tilesheet_requests).
                 Takes a mod abbreviation or unlocalized mod name and the link to the zip file.
@@ -66,22 +66,22 @@ public class TilesheetRequestCommand extends AbstractCommand {
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
         if (args.getLength() < 2) {
-            return incorrectUsage(event);
+            return incorrectUsage(context, event);
         }
 
         return event.getMessage().getChannel().flatMap(channel -> {
             String modInput = args.getArgRange(0, args.getLength() - 1);
             String link = args.getArg(args.getLength() - 1);
-            Mod mod = Mod.getByInfo(context.getWiki(), modInput);
+            Mod mod = Mod.getByInfo(context.wiki(), modInput);
 
             if (mod == null)
                 return sendMessage(String.format("The mod specified (**%s**) does not exist.", modInput), channel);
 
-            String pageText = context.getWiki().getPageText(REQUESTS_PAGE);
+            String pageText = context.wiki().getPageText(REQUESTS_PAGE);
             Matcher matcher = PATTERN.matcher(pageText);
             if (!matcher.find())
                 return sendMessage("**Error:** Could not detect footer on page. Please fix it -> <"
-                        + WikiUtil.getBaseWikiPageUrl(context.getWiki(), REQUESTS_PAGE) + '>', channel);
+                        + WikiUtil.getBaseWikiPageUrl(context.wiki(), REQUESTS_PAGE) + '>', channel);
 
             String header = "== " + mod.getName() + " ==";
             User user = event.getMessage().getAuthor().get();
@@ -89,7 +89,7 @@ public class TilesheetRequestCommand extends AbstractCommand {
                     mod.getAbbrv(), MessageUtil.getUsernameDiscriminator(user), link);
 
             String newText = pageText.replace(matcher.group(), "\n\n" + header + '\n' + talkMessage + '\n' + FOOTER);
-            AReply reply = context.getWiki().edit(REQUESTS_PAGE, newText, "Added tilesheet request for " + mod.getAbbrv());
+            AReply reply = context.wiki().edit(REQUESTS_PAGE, newText, "Added tilesheet request for " + mod.getAbbrv());
 
             String message = MessageUtil.getMessageFromReply(reply, r -> {
                 Bot.LOGGER.info("Added tilesheet request for {}", mod.getAbbrv());

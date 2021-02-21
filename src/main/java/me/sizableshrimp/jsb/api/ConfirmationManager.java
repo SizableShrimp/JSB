@@ -28,8 +28,11 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.reaction.ReactionEmoji;
 import me.sizableshrimp.jsb.data.BaseConfirmationContext;
 import me.sizableshrimp.jsb.listeners.ConfirmationListener;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,11 +40,12 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 public class ConfirmationManager<C extends BaseConfirmationContext> {
-    private final Map<ReactionEmoji, BiFunction<C, ReactionAddEvent, Mono<?>>> reactionsMap;
+    public static final Duration CONFIRMATION_TIMEOUT = Duration.ofMinutes(10);
+    private final Map<ReactionEmoji, BiFunction<C, ReactionAddEvent, Mono<Message>>> reactionsMap;
     private final List<ReactionEmoji> reactionsOrder;
     private final Map<Snowflake, C> awaitingConfirmation = new HashMap<>();
 
-    public ConfirmationManager(Map<ReactionEmoji, BiFunction<C, ReactionAddEvent, Mono<?>>> reactionsMap, List<ReactionEmoji> reactionsOrder) {
+    public ConfirmationManager(Map<ReactionEmoji, BiFunction<C, ReactionAddEvent, Mono<Message>>> reactionsMap, List<ReactionEmoji> reactionsOrder) {
         this.reactionsMap = Map.copyOf(reactionsMap);
         this.reactionsOrder = reactionsOrder;
 
@@ -52,25 +56,22 @@ public class ConfirmationManager<C extends BaseConfirmationContext> {
     }
 
     public boolean isValid(ReactionAddEvent event) {
-        C confirmation = awaitingConfirmation.get(event.getMessageId());
-        return confirmation != null && confirmation.authorId.equals(event.getUserId()) && reactionsMap.containsKey(event.getEmoji());
+        C confirmation = this.awaitingConfirmation.get(event.getUserId());
+        return confirmation != null && confirmation.messageId().equals(event.getMessageId()) && this.reactionsMap.containsKey(event.getEmoji());
     }
 
-    public Mono<?> execute(ReactionAddEvent event) {
-        C confirmation = awaitingConfirmation.remove(event.getMessageId());
-        if (System.currentTimeMillis() - event.getMessageId().getTimestamp().toEpochMilli() > 10_000)
-            return Mono.empty(); // Do not allow responses after 10 minutes
-        return reactionsMap.get(event.getEmoji()).apply(confirmation, event);
+    public Mono<Message> execute(ReactionAddEvent event) {
+        C confirmation = this.awaitingConfirmation.remove(event.getUserId());
+        if (CONFIRMATION_TIMEOUT.compareTo(Duration.between(Instant.now(), event.getMessageId().getTimestamp())) <= 0)
+            return Mono.empty(); // Do not allow responses after the confirmation timeout
+        return this.reactionsMap.get(event.getEmoji()).apply(confirmation, event);
     }
 
-    public Mono<Message> addReactions(Message message, C confirmation) {
-        awaitingConfirmation.put(message.getId(), confirmation);
-        Mono<Message> mono = Mono.just(message);
+    public Mono<Void> addReactions(Message response, C confirmation) {
+        this.awaitingConfirmation.put(confirmation.authorId(), confirmation);
 
-        for (ReactionEmoji emoji : reactionsOrder) {
-            mono = mono.flatMap(m -> m.addReaction(emoji).thenReturn(m));
-        }
-
-        return mono;
+        return Flux.fromIterable(this.reactionsOrder)
+                .flatMap(response::addReaction)
+                .then();
     }
 }

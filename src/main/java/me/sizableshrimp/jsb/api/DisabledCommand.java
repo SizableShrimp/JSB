@@ -28,7 +28,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a {@link Command} as disabled.
+ * Marks a command as disabled.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

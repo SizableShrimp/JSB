@@ -41,6 +41,7 @@ import java.nio.file.Path;
 public class Bot {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final Logger LOGGER = LoggerFactory.getLogger(Bot.class);
+    public static final boolean IN_DEBUG_MODE = System.getenv("DEBUG") != null;
     private static Config config;
     private static long firstOnline;
 
@@ -54,7 +55,7 @@ public class Bot {
         if (wiki == null)
             return;
 
-        DiscordConfiguration.login(config.getPrefix(), config.getBotToken(), System.getenv("DEBUG") != null, client -> {
+        DiscordConfiguration.login(config.getPrefix(), config.getBotToken(), IN_DEBUG_MODE, client -> {
             EventHandler handler = new EventHandler(client, wiki);
             handler.register();
         }).block();
@@ -125,9 +126,9 @@ public class Bot {
     }
 
     public static void setFirstOnline(long millis) {
-        if (Bot.firstOnline != 0)
+        if (firstOnline != 0)
             throw new IllegalStateException("firstOnline already set");
 
-        Bot.firstOnline = millis;
+        firstOnline = millis;
     }
 }

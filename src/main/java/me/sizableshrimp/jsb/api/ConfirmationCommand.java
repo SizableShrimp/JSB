@@ -36,11 +36,11 @@ import java.util.function.BiFunction;
 public abstract class ConfirmationCommand<C extends BaseConfirmationContext> extends AbstractCommand {
     protected final ConfirmationManager<C> confirmationManager;
 
-    protected ConfirmationCommand(Map<ReactionEmoji, BiFunction<C, ReactionAddEvent, Mono<?>>> reactionsMap, List<ReactionEmoji> reactionsOrder) {
+    protected ConfirmationCommand(Map<ReactionEmoji, BiFunction<C, ReactionAddEvent, Mono<Message>>> reactionsMap, List<ReactionEmoji> reactionsOrder) {
         this.confirmationManager = new ConfirmationManager<>(reactionsMap, reactionsOrder);
     }
 
-    protected Mono<Message> addReactions(Message message, C context) {
-        return confirmationManager.addReactions(message, context);
+    protected Mono<Message> addReactions(Message response, C context) {
+        return this.confirmationManager.addReactions(response, context).thenReturn(response);
     }
 }
