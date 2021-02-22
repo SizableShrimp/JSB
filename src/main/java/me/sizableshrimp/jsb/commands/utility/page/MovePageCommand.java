@@ -118,7 +118,7 @@ public class MovePageCommand extends ConfirmationCommand<MovePageCommand.Confirm
                     : "Do you want to move";
             String redirectMessage = leaveRedirect ? "while keeping a redirect" : "__without__ leaving a redirect";
             String reasonMessage = reason == null ? "" : " with reason \"" + reason + "\"";
-            String fullMessage = "**%s** to <%s> %s%s".formatted(originalPage, destinationUrl, redirectMessage, reasonMessage);
+            String fullMessage = "**%s** to <%s> %s%s.".formatted(originalPage, destinationUrl, redirectMessage, reasonMessage);
             return sendMessage("%s **%s** to %s %s%s?".formatted(preface, originalPage, destinationUrl, redirectMessage, reasonMessage), channel)
                     .flatMap(m -> addReactions(m, new ConfirmationContext(context.wiki(), event.getMessage(), m, originalPage, destinationPage, leaveRedirect, parsedReason, fullMessage)));
         });
