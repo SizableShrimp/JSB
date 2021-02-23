@@ -28,12 +28,15 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.object.entity.channel.MessageChannel;
+import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Permission;
 import me.sizableshrimp.jsb.Bot;
 import org.fastily.jwiki.core.AReply;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -49,12 +52,12 @@ public final class MessageUtil {
         return message.isBlank() ? Mono.empty() : channel.createMessage(ZERO_WIDTH_SPACE + message);
     }
 
-    public static Mono<Message> sendEmbed(Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
-        return channel.createMessage(message -> message.setEmbed(embed));
+    public static Mono<Message> sendEmbed(Consumer<? super EmbedCreateSpec> spec, MessageChannel channel) {
+        return channel.createMessage(message -> message.setEmbed(spec));
     }
 
-    public static Mono<Message> sendEmbed(String message, Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
-        return channel.createMessage(m -> m.setContent(ZERO_WIDTH_SPACE + message).setEmbed(embed));
+    public static Mono<Message> sendEmbed(String message, Consumer<? super EmbedCreateSpec> spec, MessageChannel channel) {
+        return channel.createMessage(m -> m.setContent(ZERO_WIDTH_SPACE + message).setEmbed(spec));
     }
 
     public static String getUsernameDiscriminator(User user) {
@@ -126,5 +129,11 @@ public final class MessageUtil {
         }
 
         throw new IllegalStateException("Reply was not in a valid state");
+    }
+
+    public static Mono<Void> addReactions(Message message, List<ReactionEmoji> reactions) {
+        return Flux.fromIterable(reactions)
+                .flatMap(message::addReaction)
+                .then();
     }
 }

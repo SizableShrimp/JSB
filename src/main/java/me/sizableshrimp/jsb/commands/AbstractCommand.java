@@ -48,11 +48,15 @@ public abstract class AbstractCommand implements Command {
         return MessageUtil.sendMessage(message, channel);
     }
 
-    protected static Mono<Message> sendEmbed(Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
-        return MessageUtil.sendEmbed(embed, channel);
+    protected static Mono<Message> sendEmbed(Consumer<? super EmbedCreateSpec> spec, MessageChannel channel) {
+        return MessageUtil.sendEmbed(spec, channel);
     }
 
-    protected static Mono<Message> sendMessage(String message, Consumer<? super EmbedCreateSpec> embed, MessageChannel channel) {
-        return MessageUtil.sendEmbed(message, embed, channel);
+    protected static Mono<Message> sendMessage(String message, Consumer<? super EmbedCreateSpec> spec, MessageChannel channel) {
+        return MessageUtil.sendEmbed(message, spec, channel);
+    }
+
+    protected static Consumer<EmbedCreateSpec> createRetrievalEmbed(Consumer<EmbedCreateSpec> spec) {
+        return spec.andThen(embed -> embed.setFooter("Retrieved by JSB with love ❤", null));
     }
 }

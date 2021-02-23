@@ -118,7 +118,7 @@ public class GetGridCellCommand extends AbstractCommand {
                 List<JsonObject> reply = WikiUtil.getQueryRepliesAsList(LIST_TILES.createQuery(context.wiki()).set("tsmod", k), "tiles");
                 Map<String, Tile> result = new HashMap<>();
                 for (JsonObject obj : reply) {
-                    Tile tile = Bot.GSON.fromJson(obj, Tile.class);
+                    Tile tile = new Tile(obj.get("id").getAsLong(), obj.get("mod").getAsString(), obj.get("name").getAsString(), obj.get("x").getAsInt(), obj.get("y").getAsInt(), obj.get("z").getAsInt());
                     result.put(tile.name().toLowerCase(), tile);
                 }
                 return result;
@@ -141,11 +141,10 @@ public class GetGridCellCommand extends AbstractCommand {
             String page = context.wiki().exists(disambiguated) ? disambiguated : selected.name();
             String pageUrl = WikiUtil.getBaseWikiPageUrl(context.wiki(), page);
             String attachment = selected.name().replace(' ', '_') + ".png";
-            return channel.createMessage(mSpec -> mSpec.addFile(attachment, image)
-                    .setEmbed(eSpec -> eSpec.setImage("attachment://" + attachment)
+            return channel.createMessage(message -> message.addFile(attachment, image)
+                    .setEmbed(createRetrievalEmbed(embed -> embed.setImage("attachment://" + attachment)
                             .setTitle(selected.name())
-                            .setUrl(pageUrl)
-                            .setFooter("Retrieved by JSB with love ❤", null)));
+                            .setUrl(pageUrl))));
         });
     }
 

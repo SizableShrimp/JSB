@@ -77,10 +77,9 @@ public class GetModiconCommand extends AbstractCommand {
             if (file == null) // It is missing
                 return sendMessage(String.format("A modicon for **%s** does not exist at <%s>.", mod.getName(), link), channel);
 
-            return sendEmbed(spec -> spec.setImage(fileUrl)
+            return sendEmbed(createRetrievalEmbed(embed -> embed.setImage(fileUrl)
                     .setTitle(file)
-                    .setUrl(link)
-                    .setFooter("Retrieved by JSB with love ❤", null), channel);
+                    .setUrl(link)), channel);
         });
     }
 }
