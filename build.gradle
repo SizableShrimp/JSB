@@ -19,7 +19,7 @@ repositories {
 dependencies {
     // Core
     // implementation 'org.fastily:jwiki:2.0.0'
-    implementation 'com.github.SizableShrimp:jwiki:9a9e185cca44622ba9b5960de6aa6ea280772a42'
+    implementation 'com.github.SizableShrimp:jwiki:3527b5374896629d0ba5c92789f1a1d7bf5a977c'
     implementation 'com.discord4j:discord4j-core:3.1.3'
 
     // Useful Libraries
