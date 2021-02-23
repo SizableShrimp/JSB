@@ -57,11 +57,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public class GetGridCellCommand extends AbstractCommand {
     private static final int TARGET_SIZE = 128; // The pixel size to upscale all tilesheet images to for easier viewing
     private static final QTemplate LIST_TILES = new QTemplate(FL.pMap("list", "tiles"), "tslimit", "tiles");
     private static final QTemplate LIST_TILESHEETS = new QTemplate(FL.pMap("list", "tilesheets"), "tslimit", "tilesheets");
+    private static final Pattern ILLEGAL_FILE_CHARS = Pattern.compile("[^a-zA-Z0-9.\\-]");
     private final CachedMap<String, Map<String, Tile>> cachedTiles = new CachedMap<>();
     private final CachedMap<String, Set<Integer>> cachedSizes = new CachedMap<>();
 
@@ -140,7 +142,7 @@ public class GetGridCellCommand extends AbstractCommand {
             String disambiguated = String.format("%s (%s)", selected.name(), mod.getName());
             String page = context.wiki().exists(disambiguated) ? disambiguated : selected.name();
             String pageUrl = WikiUtil.getBaseWikiPageUrl(context.wiki(), page);
-            String attachment = selected.name().replace(' ', '_') + ".png";
+            String attachment = ILLEGAL_FILE_CHARS.matcher(selected.name().replace(' ', '_') ).replaceAll("") + ".png";
             return channel.createMessage(message -> message.addFile(attachment, image)
                     .setEmbed(createRetrievalEmbed(embed -> embed.setImage("attachment://" + attachment)
                             .setTitle(selected.name())
