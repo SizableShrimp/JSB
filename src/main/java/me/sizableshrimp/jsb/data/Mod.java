@@ -223,7 +223,7 @@ public final class Mod {
      * Scribunto Console API is null OR if the mod does not exist.
      *
      * @param wiki A {@link Wiki} object to use for requesting the data.
-     * @param modInfo The mod abbreviation, case insensitive.
+     * @param modAbbrv The mod abbreviation, case insensitive.
      * @return A {@link Mod} object, or null.
      */
     public static Mod getByAbbreviation(Wiki wiki, String modAbbrv) {
@@ -257,7 +257,7 @@ public final class Mod {
 
     private static void logConflict(Mod mod, Mod prev) {
         if (prev != null && mod != prev) {
-            Bot.LOGGER.error("A mod conflict was found between {} and {}.", prev, mod);
+            Bot.LOGGER.warn("A mod conflict was found between {} and {}.", prev, mod);
         }
     }
 

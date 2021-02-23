@@ -24,6 +24,7 @@ package me.sizableshrimp.jsb.commands.utility.modicon;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.MessageChannel;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
@@ -70,16 +71,28 @@ public class GetModiconCommand extends AbstractCommand {
                 return GetModCommand.formatModDoesntExistMessage(channel, modInput);
             }
 
-            String file = String.format("File:Modicon %s.png", mod.getName());
-            String fileUrl = WikiUtil.getLatestFileUrl(context.wiki(), file);
+            String file = String.format("File:Modicon %s.gif", mod.getName());
             String link = WikiUtil.getBaseWikiPageUrl(context.wiki(), file);
+            if (!context.wiki().exists(file)) {
+                file = file.substring(0, file.length() - 3) + "png";
+                link = WikiUtil.getBaseWikiPageUrl(context.wiki(), file);
+            }
+            if (!context.wiki().exists(file))
+                return noModiconFound(channel, mod, link);
+            String fileUrl = WikiUtil.getLatestFileUrl(context.wiki(), file);
 
-            if (file == null) // It is missing
-                return sendMessage(String.format("A modicon for **%s** does not exist at <%s>.", mod.getName(), link), channel);
+            if (fileUrl == null) // It is missing
+                return noModiconFound(channel, mod, link);
 
+            String finalFile = file;
+            String finalLink = link;
             return sendEmbed(createRetrievalEmbed(embed -> embed.setImage(fileUrl)
-                    .setTitle(file)
-                    .setUrl(link)), channel);
+                    .setTitle(finalFile)
+                    .setUrl(finalLink)), channel);
         });
+    }
+
+    private static Mono<Message> noModiconFound(MessageChannel channel, Mod mod, String link) {
+        return sendMessage(String.format("A modicon for **%s** does not exist at <%s>.", mod.getName(), link), channel);
     }
 }
