@@ -31,6 +31,10 @@ public class Reactions {
     public static final ReactionEmoji CHECKMARK = ReactionEmoji.unicode("✅");
     public static final ReactionEmoji X = ReactionEmoji.unicode("❌");
     public static final ReactionEmoji WASTEBASKET = ReactionEmoji.unicode("\uD83D\uDDD1");
+    public static final ReactionEmoji REWIND = ReactionEmoji.unicode("⏪");
+    public static final ReactionEmoji ARROW_LEFT = ReactionEmoji.unicode("⬅️");
+    public static final ReactionEmoji ARROW_RIGHT = ReactionEmoji.unicode("➡️");
+    public static final ReactionEmoji FAST_FORWARD = ReactionEmoji.unicode("⏩");
 
     private Reactions() {}
 }

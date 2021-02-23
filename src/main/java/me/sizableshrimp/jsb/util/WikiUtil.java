@@ -34,6 +34,8 @@ import org.fastily.jwiki.core.WQuery;
 import org.fastily.jwiki.core.Wiki;
 import org.fastily.jwiki.util.FL;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -121,15 +123,13 @@ public final class WikiUtil {
      * Returns a link to the {@code page} specified, never null.
      * This always returns a link even if the page does not exist.
      * Only supports the current {@link Wiki} domain using {@link #getBaseArticleUrl(Wiki)}.
-     * <p>
-     * <b>NOTE:</b> The returned link is not URL encoded, only spaces are replaced with underscores.
      *
      * @param wiki The {@link  Wiki} instance.
      * @param page The page to link to, not including square brackets.
      * @return a link to the {@code page} specified, never null.
      */
     public static String getBaseWikiPageUrl(Wiki wiki, String page) {
-        return getBaseArticleUrl(wiki) + page.replace(' ', '_');
+        return getBaseArticleUrl(wiki) + URLEncoder.encode(page.replace(' ', '_'), StandardCharsets.UTF_8);
     }
 
     /**
