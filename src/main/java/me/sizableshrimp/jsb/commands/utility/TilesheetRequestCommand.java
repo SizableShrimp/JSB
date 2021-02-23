@@ -33,6 +33,7 @@ import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.data.Mod;
 import me.sizableshrimp.jsb.util.MessageUtil;
 import me.sizableshrimp.jsb.util.WikiUtil;
+import okhttp3.HttpUrl;
 import org.fastily.jwiki.core.AReply;
 import reactor.core.publisher.Mono;
 
@@ -72,6 +73,9 @@ public class TilesheetRequestCommand extends AbstractCommand {
         return event.getMessage().getChannel().flatMap(channel -> {
             String modInput = args.getArgRange(0, args.getLength() - 1);
             String link = args.getArg(args.getLength() - 1);
+            HttpUrl url = HttpUrl.parse(link);
+            if (url == null)
+                return sendMessage("Please provide a valid URL!", channel);
             Mod mod = Mod.getByInfo(context.wiki(), modInput);
 
             if (mod == null)
@@ -89,12 +93,12 @@ public class TilesheetRequestCommand extends AbstractCommand {
                     mod.getAbbrv(), MessageUtil.getUsernameDiscriminator(user), link);
 
             String newText = pageText.replace(matcher.group(), "\n\n" + header + '\n' + talkMessage + '\n' + FOOTER);
-            AReply reply = context.wiki().edit(REQUESTS_PAGE, newText, "Added tilesheet request for " + mod.getAbbrv());
+            AReply reply = context.wiki().edit(REQUESTS_PAGE, newText, "Added tilesheet request for " + mod.getName());
 
             String message = MessageUtil.getMessageFromReply(reply, r -> {
-                Bot.LOGGER.info("Added tilesheet request for {}", mod.getAbbrv());
-                return "Added tilesheet request for `" + mod.getAbbrv() + "`.";
-            }, r -> "adding tilesheet request for " + mod.getAbbrv());
+                Bot.LOGGER.info("Added tilesheet request for {}", mod.getName());
+                return "Added tilesheet request for **" + mod.getName() + "**.";
+            }, r -> "adding tilesheet request for " + mod.getName());
 
             return sendMessage(message, channel);
         });
