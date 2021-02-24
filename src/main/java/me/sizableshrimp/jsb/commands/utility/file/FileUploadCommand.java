@@ -70,7 +70,7 @@ public class FileUploadCommand extends ConfirmationCommand<FileUploadCommand.Con
     public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname% <destination> <file url> [page summary]", """
                 Uploads a file to the wiki.
-                Provide the destination and include the file extension. For example, `Image.png`.
+                Provide the destination. For example, `Image.png`. The file extension is optional because the wiki can determine it automatically.
                 Provide an optional summary to be placed on the file page.
 
                 If any parameters have a space in them, **wrap in quotes**.

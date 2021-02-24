@@ -69,6 +69,24 @@ public final class Args {
         return "false".equalsIgnoreCase(arg) || "f".equalsIgnoreCase(arg) || "0".equalsIgnoreCase(arg);
     }
 
+    public Integer getArgAsInteger(int index) {
+        try {
+            return Integer.parseInt(getArg(index));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public Integer getNullableArgAsInteger(int index) {
+        String arg = getArgNullable(index);
+        if (arg == null)
+            return null;
+        try {
+            return Integer.parseInt(arg);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
     /**
      * Gets all arguments in a range joined by a space from {@code startInclusive} to the end of the array.
      *

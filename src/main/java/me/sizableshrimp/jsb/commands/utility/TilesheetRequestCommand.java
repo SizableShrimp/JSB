@@ -48,7 +48,7 @@ public class TilesheetRequestCommand extends AbstractCommand {
 
     @Override
     public CommandInfo getInfo(CommandContext context) {
-        return new CommandInfo(this, "%cmdname% <mod info> <link>", """
+        return new CommandInfo(this, "%cmdname% <mod name|mod abbreviation> <file url>", """
                 Adds a tilesheet request to [FTBW:Tilesheet requests](https://ftb.gamepedia.com/FTBW:Tilesheet_requests).
                 Takes a mod abbreviation or unlocalized mod name and the link to the zip file.
                 """);
@@ -75,7 +75,7 @@ public class TilesheetRequestCommand extends AbstractCommand {
             String link = args.getArg(args.getLength() - 1);
             HttpUrl url = HttpUrl.parse(link);
             if (url == null)
-                return sendMessage("Please provide a valid URL!", channel);
+                return sendMessage("Please provide a valid file URL!", channel);
             Mod mod = Mod.getByInfo(context.wiki(), modInput);
 
             if (mod == null)

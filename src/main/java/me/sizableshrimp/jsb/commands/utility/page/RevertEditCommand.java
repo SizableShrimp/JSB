@@ -57,9 +57,10 @@ public class RevertEditCommand extends ConfirmationCommand<RevertEditCommand.Con
                                 .formatted(confirmation.user(), confirmation.reason(), MessageUtil.getUsernameDiscriminator(user));
                         AReply reply = confirmation.wiki().edit(confirmation.page(), confirmation.revertHere().text, reason);
 
+                        String addS = confirmation.count() == 1 ? "" : "s";
                         String message = MessageUtil.getMessageFromReply(reply,
-                                r -> "Reverted consecutive edits by `%s` on page **%s**.".formatted(confirmation.user(), confirmation.page()),
-                                r -> "reverting consecutive edits on page **%s**".formatted(confirmation.page()));
+                                r -> "Reverted **%d** consecutive edit%s by `%s` on page **%s**.".formatted(confirmation.count(), addS, confirmation.user(), confirmation.page()),
+                                r -> "reverting edits on page **%s**".formatted(confirmation.page()));
                         return sendMessage(message, channel);
                     });
                 }), Reactions.X, (confirmation, event) -> event.getMessage().flatMap(Message::delete)
@@ -70,9 +71,12 @@ public class RevertEditCommand extends ConfirmationCommand<RevertEditCommand.Con
 
     @Override
     public CommandInfo getInfo(CommandContext context) {
-        return new CommandInfo(this, "%cmdname% <page> [reason]", """
+        return new CommandInfo(this, "%cmdname% <page> [reason] [number of edits]", """
                 Reverts the latest consecutive edits made by the same user on a page.
-                Optionally specify a reason.
+                Optionally specify a reason and number of edits to revert from the same user.
+                If no number of edits is supplied, edits from the latest user will be reverted up to the point that a different user has edited the page.
+
+                If any parameters have a space in them, **wrap in quotes**.
                 """);
     }
 
@@ -99,8 +103,9 @@ public class RevertEditCommand extends ConfirmationCommand<RevertEditCommand.Con
 
         return event.getMessage().getChannel().flatMap(channel -> {
             String page = context.wiki().normalizeTitle(args.getArg(0));
-            String reason = args.getLength() > 1 ? args.getArgRange(1) : null;
+            String reason = args.getArgNullable(1);
             String parsedReason = reason == null ? "" : " for \"" + reason + '"';
+            Integer edits = args.getNullableArgAsInteger(2);
             String invalidMessage = getInvalidMessage(context.wiki(), page);
             if (invalidMessage != null)
                 return sendMessage(invalidMessage, channel);
@@ -113,11 +118,25 @@ public class RevertEditCommand extends ConfirmationCommand<RevertEditCommand.Con
             if (nonUserRevs.isEmpty())
                 return sendMessage("There has only been one editor of **%s**. Please delete the page instead.".formatted(page), channel);
 
-            Revision latestNonUserRev = nonUserRevs.get(0);
+            Revision revertHere = nonUserRevs.get(0);
             Revision latest = getLatestRev(context.wiki(), page);
+            List<Revision> allRevs = context.wiki().getRevisions(page, -1, false, null, null, null, null);
+            int count = 0;
+            for (Revision rev : allRevs) {
+                if (edits != null && edits == count && count != 0) {
+                    revertHere = rev;
+                    break;
+                }
+                if (rev.equals(revertHere))
+                    break;
+                count++;
+            }
+            String addS = count == 1 ? "" : "s";
             String withReason = reason == null ? "" : " with reason \"%s\"".formatted(reason);
-            return sendMessage("Do you want to revert consecutive edits by `%s` on page **%s**%s?".formatted(lastEditor, page, withReason), channel)
-                    .flatMap(m -> addReactions(m, new ConfirmationContext(context.wiki(), event.getMessage(), m, page, parsedReason, lastEditor, latestNonUserRev, latest)));
+            int finalCount = count;
+            Revision finalRevertHere = revertHere;
+            return sendMessage("Do you want to revert **%d** consecutive edit%s by `%s` on page **%s**%s?".formatted(count, addS, lastEditor, page, withReason), channel)
+                    .flatMap(m -> addReactions(m, new ConfirmationContext(context.wiki(), event.getMessage(), m, page, parsedReason, lastEditor, finalRevertHere, latest, finalCount)));
         });
     }
 
@@ -132,5 +151,5 @@ public class RevertEditCommand extends ConfirmationCommand<RevertEditCommand.Con
         return null;
     }
 
-    public record ConfirmationContext(Wiki wiki, Message original, Message response, String page, String reason, String user, Revision revertHere, Revision latest) implements BaseConfirmationContext {}
+    public record ConfirmationContext(Wiki wiki, Message original, Message response, String page, String reason, String user, Revision revertHere, Revision latest, int count) implements BaseConfirmationContext {}
 }
