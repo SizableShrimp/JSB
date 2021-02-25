@@ -20,13 +20,14 @@
  * SOFTWARE.
  */
 
-package me.sizableshrimp.jsb.commands;
+package me.sizableshrimp.jsb.commands.utility.info;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import me.sizableshrimp.jsb.api.CommandContext;
 import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
+import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.data.Language;
 import me.sizableshrimp.jsb.util.CachedData;
 import org.fastily.jwiki.core.NS;
