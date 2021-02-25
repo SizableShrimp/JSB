@@ -43,13 +43,8 @@ public class GetSubpagesCommand extends AbstractCommand {
 
         return event.getMessage().getChannel().flatMap(channel -> {
             String fullPage = context.wiki().normalizeTitle(args.getJoinedArgs());
-            int nsIndex = fullPage.indexOf(':');
-            NS ns = null;
-            String prefix = fullPage;
-            if (nsIndex != -1) {
-                ns = context.wiki().getNS(fullPage.substring(0, nsIndex));
-                prefix = fullPage.substring(nsIndex + 1);
-            }
+            NS ns = context.wiki().whichNS(fullPage);
+            String prefix = context.wiki().nss(fullPage);
             List<String> temp = context.wiki().allPages(prefix, false, false, -1, ns);
             temp.removeIf(page -> Language.getByTitle(context.wiki(), page) != null);
 

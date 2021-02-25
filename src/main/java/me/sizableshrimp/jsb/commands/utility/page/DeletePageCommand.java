@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class DeletePageCommand extends ConfirmationCommand<DeletePageCommand.ConfirmationContext> {
-    public static final String DELETE_REASONS_PAGE = "MediaWiki:Filedelete-reason-dropdown";
+    public static final String DELETE_REASONS_PAGE = "MediaWiki:Deletereason-dropdown";
     private final CachedData<String> deleteReasons = new CachedData<>();
 
     public DeletePageCommand() {
@@ -117,7 +117,7 @@ public class DeletePageCommand extends ConfirmationCommand<DeletePageCommand.Con
 
     private static String getInvalidMessage(Wiki wiki, String page) {
         if (!wiki.exists(page))
-            return String.format("**%s** does not exist!", page);
+            return "**%s** does not exist!".formatted(page);
 
         return null;
     }

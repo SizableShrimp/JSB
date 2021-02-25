@@ -29,6 +29,8 @@ import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
 import me.sizableshrimp.jsb.commands.AbstractCommand;
 import me.sizableshrimp.jsb.util.WikiUtil;
+import org.fastily.jwiki.core.QReply;
+import org.fastily.jwiki.core.WAction;
 import org.fastily.jwiki.core.Wiki;
 import reactor.core.publisher.Mono;
 
@@ -74,8 +76,13 @@ public class WikilinkCommand extends AbstractCommand {
     }
 
     public static StringBuilder genWikilink(StringBuilder builder, Wiki wiki, String link) {
-        if (SPECIAL_PAGE.matcher(link).find())
-            return builder.append('<').append(WikiUtil.getBaseWikiPageUrl(wiki, link)).append(">\n");
+        if (SPECIAL_PAGE.matcher(link).find()) {
+            boolean doesSpecialPageExist = QReply.wrap(WAction.getAction(wiki, "query", true, "titles", link, "prop", "pageprops"))
+                    .propComp("ns", "missing").get("-1") == null;
+            return doesSpecialPageExist
+                    ? builder.append(WikiUtil.getBaseWikiPageUrl(wiki, link)).append("\n")
+                    : builder.append("The special page **").append(link).append("** does not exist.\n");
+        }
 
         String baseUrl = WikiUtil.getBaseArticleUrl(wiki);
         String url = WikiUtil.getWikiPageUrl(wiki, link);

@@ -66,13 +66,13 @@ public class InfoCommand extends AbstractCommand {
                 """;
 
         return embed -> {
+            embed.setTitle("Information");
             embed.addField("Author", owner, true);
-            embed.setAuthor("Information", null, null);
             embed.setDescription(description);
             embed.addField("Discord4J Version", GitProperties.getProperties().getProperty(GitProperties.APPLICATION_VERSION), true);
-            embed.addField("Source", "[SizableShrimp/JSB on Github](https://github.com/SizableShrimp/JSB)", false);
-            embed.addField("Prefix", '`' + Bot.getConfig().getPrefix() + '`', false);
-            embed.addField("Uptime", getUptime(), false);
+            embed.addField("Source", "[SizableShrimp/JSB on Github](https://github.com/SizableShrimp/JSB)", true);
+            embed.addField("Prefix", '`' + Bot.getConfig().getPrefix() + '`', true);
+            embed.addField("Uptime", getUptime(), true);
         };
     }
 

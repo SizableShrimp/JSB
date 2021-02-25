@@ -29,18 +29,23 @@ import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.api.ConfirmationCommand;
 import me.sizableshrimp.jsb.args.Args;
 import me.sizableshrimp.jsb.data.BaseConfirmationContext;
+import me.sizableshrimp.jsb.data.Language;
 import me.sizableshrimp.jsb.util.MessageUtil;
 import me.sizableshrimp.jsb.util.Reactions;
 import me.sizableshrimp.jsb.util.WikiUtil;
 import org.fastily.jwiki.core.AReply;
+import org.fastily.jwiki.core.NS;
 import org.fastily.jwiki.core.Wiki;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public class MovePageCommand extends ConfirmationCommand<MovePageCommand.ConfirmationContext> {
+    private static final Pattern SUBPAGE_PATTERN = Pattern.compile("/+$");
+
     public MovePageCommand() {
         super(Map.of(
                 Reactions.CHECKMARK, (confirmation, event) -> event.getChannel().flatMap(channel -> {
@@ -126,7 +131,15 @@ public class MovePageCommand extends ConfirmationCommand<MovePageCommand.Confirm
 
     private static String getInvalidMessage(Wiki wiki, String originalPage, String destinationPage) {
         if (!wiki.exists(originalPage))
-            return String.format("**%s** does not exist!", originalPage);
+            return "**%s** does not exist!".formatted(originalPage);
+
+        NS ns = wiki.whichNS(originalPage);
+        String prefix = SUBPAGE_PATTERN.matcher(wiki.nss(originalPage)).replaceFirst("");
+        List<String> subpages = wiki.allPages(prefix + "/", false, false, -1, ns);
+        for (String subpage : subpages) {
+            if (Language.getByTitle(wiki, subpage) != null)
+                return "**%s** has translated subpages. Please move manually at <%s>.".formatted(originalPage, WikiUtil.getBaseWikiPageUrl(wiki, "Special:MovePage/" + originalPage));
+        }
 
         return null;
     }
