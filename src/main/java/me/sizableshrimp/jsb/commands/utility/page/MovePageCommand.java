@@ -40,6 +40,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -73,12 +74,13 @@ public class MovePageCommand extends ConfirmationCommand<MovePageCommand.Confirm
 
     @Override
     public CommandInfo getInfo(CommandContext context) {
-        return new CommandInfo(this, "%cmdname% <original page> <destination> [leave redirect <true|false>] [reason]", """
+        return new CommandInfo(this, "%cmdname% <original page> <destination> [reason] [leave redirect <true|false>]", """
                 Moves a page from the original location to its destination, optionally leaving a redirect or not.
+                A reason can be optionally specified.
                 If the redirect parameter is omitted, it will default to `true`.
-                A reason can be optionally specified. If a reason is specified, leaving a redirect MUST be specified.
 
                 If any parameters have a space in them, **wrap in quotes**.
+                If you would like to not leave a redirect but have no reason, use "" for the reason.
                 """);
     }
 
@@ -106,11 +108,11 @@ public class MovePageCommand extends ConfirmationCommand<MovePageCommand.Confirm
         return event.getMessage().getChannel().flatMap(channel -> {
             String originalPage = context.wiki().normalizeTitle(args.getArg(0));
             String destinationPage = context.wiki().normalizeTitle(args.getArg(1));
-            if (args.getLength() >= 3 && !args.isArgValidBoolean(2))
+            String reason = Optional.ofNullable(args.getLength() > 2 ? args.getArg(2) : null).filter(s -> !s.isBlank()).orElse(null);
+            if (args.getLength() > 3 && !args.isArgValidBoolean(3))
                 return incorrectUsage(String.format(Args.NO_BOOLEAN_MESSAGE, "leave redirect"), context, event);
             // If this was omitted (less than 3 args), always true.
-            boolean leaveRedirect = args.getLength() < 3 || args.getArgAsBoolean(2);
-            String reason = args.getLength() >= 4 ? args.getArgRange(3) : null;
+            boolean leaveRedirect = args.getLength() < 4 || args.getArgAsBoolean(3);
             String parsedReason = reason == null ? "Move requested" : '"' + reason + '"';
 
             String invalidMessage = getInvalidMessage(context.wiki(), originalPage, destinationPage);
@@ -132,6 +134,9 @@ public class MovePageCommand extends ConfirmationCommand<MovePageCommand.Confirm
     private static String getInvalidMessage(Wiki wiki, String originalPage, String destinationPage) {
         if (!wiki.exists(originalPage))
             return "**%s** does not exist!".formatted(originalPage);
+
+        if (originalPage.equals(destinationPage))
+            return "You cannot move a page to itself!";
 
         NS ns = wiki.whichNS(originalPage);
         String prefix = SUBPAGE_PATTERN.matcher(wiki.nss(originalPage)).replaceFirst("");

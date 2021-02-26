@@ -30,6 +30,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ArgsProcessor {
+    private static final Pattern SPACES = Pattern.compile("\\s+");
+
     private ArgsProcessor() {}
 
     public static Args processWithPrefix(String data) {
@@ -63,7 +65,7 @@ public class ArgsProcessor {
 
         boolean quote = false;
         boolean escaped = false;
-        char[] chars = data.trim().toCharArray();
+        char[] chars = SPACES.matcher(data.trim()).replaceAll(" ").toCharArray();
         for (char c : chars) {
             if (c == '"' && !escaped) {
                 quote = !quote;
@@ -80,13 +82,11 @@ public class ArgsProcessor {
                 // Append if not a space or still append space if inside a quote
                 current.append(c);
             } else {
-                if (current.length() != 0)
-                    list.add(current.toString());
+                list.add(current.toString().trim());
                 current = new StringBuilder();
             }
         }
-        if (current.length() != 0)
-            list.add(current.toString()); // Add last arg
+        list.add(current.toString().trim()); // Add last arg
 
         return new Args(list.remove(0).toLowerCase(), list.toArray(String[]::new));
     }
