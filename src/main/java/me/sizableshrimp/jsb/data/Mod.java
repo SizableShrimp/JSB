@@ -33,6 +33,7 @@ import org.fastily.jwiki.util.GSONP;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 /**
  * An immutable object that stores wiki data about Mods from
@@ -45,6 +46,7 @@ public final class Mod {
      * The page name of the mods list.
      */
     public static final String MODS_LIST = "Module:Mods/list";
+    private static final Pattern NORMAL_ABBREVIATION = Pattern.compile("^[a-zA-Z][a-zA-Z0-9]*$");
     private static final Map<Wiki, Map<String, Mod>> joinedData = new HashMap<>();
     private static final Map<Wiki, TreeMap<String, Mod>> abbrvData = new HashMap<>();
     private final Wiki wiki;
@@ -130,13 +132,14 @@ public final class Mod {
             }
         }
         if (selected == -1)
-            throw new IllegalStateException("Could not find an insertion point for " + this.toString());
+            throw new IllegalStateException("Could not find an insertion point for " + this);
 
+        String expandedAbbrv = NORMAL_ABBREVIATION.matcher(this.abbrv).matches() ? this.abbrv : "[\"" + this.abbrv.replace("\"", "\\\"") + "\"]";
         String newLine;
         if (this.hasDistinctLink()) {
-            newLine = String.format("    %s = {'%s', '%s', [=[<translate>%s</translate>]=]},", this.abbrv, this.link.replace("'", "\\'"), this.name.replace("'", "\\'"), this.name);
+            newLine = String.format("    %s = {'%s', '%s', [=[<translate>%s</translate>]=]},", expandedAbbrv, this.link.replace("'", "\\'"), this.name.replace("'", "\\'"), this.name);
         } else {
-            newLine = String.format("    %s = {'%s', [=[<translate>%s</translate>]=]},", this.abbrv, this.name.replace("'", "\\'"), this.name);
+            newLine = String.format("    %s = {'%s', [=[<translate>%s</translate>]=]},", expandedAbbrv, this.name.replace("'", "\\'"), this.name);
         }
         String insertLine = lines[selected];
         String newText = rawText.replace(insertLine, newLine + '\n' + insertLine);

@@ -40,11 +40,8 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 public class AddModCommand extends ConfirmationCommand<AddModCommand.ConfirmationContext> {
-    private static final Pattern CHARACTERS = Pattern.compile("^([a-zA-Z0-9]+)$");
-
     public AddModCommand() {
         super(Map.of(
                 Reactions.CHECKMARK, (confirmation, event) -> {
@@ -101,14 +98,10 @@ public class AddModCommand extends ConfirmationCommand<AddModCommand.Confirmatio
             String modAbbrv = args.getArg(0).toUpperCase();
             String modName = args.getArg(1);
             String modPage = args.getArgNullable(2);
-            if (!CHARACTERS.matcher(modAbbrv).matches()) {
-                return sendMessage(
-                        "Abbreviations that are not purely alphanumeric are not supported for technical reasons.",
-                        channel);
-            }
-            if (Character.isDigit(modAbbrv.charAt(0))) {
+            if (modAbbrv.indexOf('"') != -1)
+                return sendMessage("Quotation marks are not allowed in a mod abbreviation.", channel);
+            if (Character.isDigit(modAbbrv.charAt(0)))
                 return sendMessage("Mod abbreviation cannot start with a number!", channel);
-            }
 
             Mod newMod = new Mod(context.wiki(), modAbbrv, modName, modPage);
             Mod conflict = newMod.getConflict();
