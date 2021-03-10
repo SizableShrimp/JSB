@@ -99,7 +99,7 @@ public class GetGridCellCommand extends AbstractCommand {
 
             String item = args.getArgRange(1);
 
-            Set<Integer> sizes = this.cachedSizes.getOrRetrieve(mod.getAbbrv(), k -> {
+            Set<Integer> sizes = this.cachedSizes.getOrRetrieve(mod.abbrv(), k -> {
                 List<JsonObject> reply = new WQuery(context.wiki(), 1, LIST_TILESHEETS).set("tsfrom", k).next().listComp("tilesheets");
                 if (reply.isEmpty())
                     return null;
@@ -113,10 +113,10 @@ public class GetGridCellCommand extends AbstractCommand {
                 return result.isEmpty() ? null : result;
             });
             if (sizes == null) {
-                return sendMessage(String.format("A **%s** tilesheet could not be found.", mod.getAbbrv()), channel);
+                return sendMessage(String.format("A **%s** tilesheet could not be found.", mod.abbrv()), channel);
             }
             int size = sizes.stream().mapToInt(i -> i).max().getAsInt();
-            Map<String, Tile> tiles = this.cachedTiles.getOrRetrieve(mod.getAbbrv(), k -> {
+            Map<String, Tile> tiles = this.cachedTiles.getOrRetrieve(mod.abbrv(), k -> {
                 List<JsonObject> reply = WikiUtil.getQueryRepliesAsList(LIST_TILES.createQuery(context.wiki()).set("tsmod", k), "tiles");
                 Map<String, Tile> result = new HashMap<>();
                 for (JsonObject obj : reply) {
@@ -127,10 +127,10 @@ public class GetGridCellCommand extends AbstractCommand {
             });
             Tile selected = tiles.get(item.toLowerCase());
             if (selected == null) {
-                return sendMessage(String.format("The item specified (**%s**) does not exist in the **%s** tilesheet.", item, mod.getAbbrv()), channel);
+                return sendMessage(String.format("The item specified (**%s**) does not exist in the **%s** tilesheet.", item, mod.abbrv()), channel);
             }
 
-            String file = String.format("File:Tilesheet %s %d %d.png", mod.getAbbrv(), size, selected.z);
+            String file = String.format("File:Tilesheet %s %d %d.png", mod.abbrv(), size, selected.z);
             String fileUrl = WikiUtil.getLatestFileUrl(context.wiki(), file);
             if (fileUrl == null)
                 return sendMessage(String.format("The tilesheet file `%s` doesn't exist!", file), channel);
@@ -139,7 +139,7 @@ public class GetGridCellCommand extends AbstractCommand {
             if (image == null)
                 return sendMessage("An error occurred when attempting to retrieve the tilesheet. Please try again later.", channel);
 
-            String disambiguated = String.format("%s (%s)", selected.name(), mod.getName());
+            String disambiguated = String.format("%s (%s)", selected.name(), mod.name());
             String page = context.wiki().exists(disambiguated) ? disambiguated : selected.name();
             String pageUrl = WikiUtil.getBaseWikiPageUrl(context.wiki(), page);
             String attachment = ILLEGAL_FILE_CHARS.matcher(selected.name().replace(' ', '_') ).replaceAll("") + ".png";

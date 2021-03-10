@@ -103,7 +103,7 @@ public class AddModiconCommand extends ConfirmationCommand<AddModiconCommand.Con
             if (url == null)
                 return sendMessage("Please provide a valid file URL!", channel);
             Mod mod = Mod.getByInfo(context.wiki(), modInput);
-            String modName = mod == null ? modInput : mod.getName();
+            String modName = mod == null ? modInput : mod.name();
 
             String invalidMessage = getInvalidMessage(context.wiki(), modName);
             if (invalidMessage != null)

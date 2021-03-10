@@ -54,8 +54,8 @@ public class RemoveModCommand extends ConfirmationCommand<RemoveModCommand.Confi
                         String message = MessageUtil.getMessageFromReply(reply, r -> {
                             Bot.LOGGER.info("Removed mod {} from mods list.", toDelete);
                             return String.format("Removed **%s** (abbreviated as `%s`) from the mods list. Please mark for translation.",
-                                    toDelete.getName(), toDelete.getAbbrv());
-                        }, r -> "deleting mod " + toDelete.getAbbrv());
+                                    toDelete.name(), toDelete.abbrv());
+                        }, r -> "deleting mod " + toDelete.abbrv());
 
                         return event.getChannel().flatMap(channel -> sendMessage(message, channel));
                     } catch (IllegalStateException e) {
@@ -63,7 +63,7 @@ public class RemoveModCommand extends ConfirmationCommand<RemoveModCommand.Confi
                     }
                 }, Reactions.WASTEBASKET, (confirmation, event) -> event.getMessage().flatMap(Message::delete)
                         .then(event.getChannel().flatMap(channel -> sendMessage(String.format("Cancelling deletion of mod named **%s** with abbreviation `%s`...",
-                                confirmation.toDelete().getName(), confirmation.toDelete().getAbbrv()), channel)))
+                                confirmation.toDelete().name(), confirmation.toDelete().abbrv()), channel)))
         ), List.of(Reactions.X, Reactions.WASTEBASKET));
     }
 
@@ -106,11 +106,11 @@ public class RemoveModCommand extends ConfirmationCommand<RemoveModCommand.Confi
                 confirm = sendMessage(String.format(
                         "Do you want to delete the mod named **%s** with abbreviation `%s` and link `%s` from the list? "
                                 + REACT_WITH,
-                        toDelete.getName(), toDelete.getAbbrv(), toDelete.getUrlLink()), channel);
+                        toDelete.name(), toDelete.abbrv(), toDelete.getUrlLink()), channel);
             } else {
                 confirm = sendMessage(String
                                 .format("Do you want to delete the mod named **%s** with abbreviation `%s` from the list? "
-                                        + REACT_WITH, toDelete.getName(), toDelete.getAbbrv()),
+                                        + REACT_WITH, toDelete.name(), toDelete.abbrv()),
                         channel);
             }
             return confirm.flatMap(m -> addReactions(m, new ConfirmationContext(context.wiki(), event.getMessage(), m, toDelete)));

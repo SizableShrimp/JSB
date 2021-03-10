@@ -67,12 +67,23 @@ public class CachedMap<K, V> {
     public V getOrRetrieve(K key, Function<K, V> retrieve) {
         TimedTuple<V> data = this.map.get(key);
         if (data == null || data.timestamp() + this.cachedExpiration < System.currentTimeMillis()) {
-            V value = retrieve.apply(key);
-            this.map.put(key, new TimedTuple<>(value));
-            return value;
+            return retrieve(key, retrieve);
         }
 
         return data.value();
+    }
+
+    /**
+     * Retrieve the value provided from the {@link Function} without considering the expiration of previous data.
+     *
+     * @param key The key to lookup in the Map.
+     * @param retrieve The {@link Function} called to retrieve the data.
+     * @return The result retrieved from the {@link Function} which is cached in the map.
+     */
+    public V retrieve(K key, Function<K, V> retrieve) {
+        V value = retrieve.apply(key);
+        this.map.put(key, new TimedTuple<>(value));
+        return value;
     }
 
     public Duration getExpiration() {

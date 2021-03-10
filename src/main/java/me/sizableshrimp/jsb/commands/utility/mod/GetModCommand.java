@@ -91,7 +91,7 @@ public class GetModCommand extends AbstractCommand {
 
     public static Mono<Message> formatModMessage(MessageChannel channel, Mod mod, Language language) {
         String link = '<' + mod.getUrlLink() + '>';
-        String formatted = String.format("**%s** (abbreviated as `%s`) can be found at %s.", mod.getName(), mod.getAbbrv(), link);
+        String formatted = String.format("**%s** (abbreviated as `%s`) can be found at %s.", mod.name(), mod.abbrv(), link);
 
         if (language != null) {
             String localized = String.format("The localized name in %s is %s.", language.getEnglish(), mod.getLocalized(language));

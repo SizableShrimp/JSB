@@ -71,7 +71,7 @@ public class GetModiconCommand extends AbstractCommand {
                 return GetModCommand.formatModDoesntExistMessage(channel, modInput);
             }
 
-            String file = String.format("File:Modicon %s.gif", mod.getName());
+            String file = String.format("File:Modicon %s.gif", mod.name());
             String link = WikiUtil.getBaseWikiPageUrl(context.wiki(), file);
             if (!context.wiki().exists(file)) {
                 file = file.substring(0, file.length() - 3) + "png";
@@ -93,6 +93,6 @@ public class GetModiconCommand extends AbstractCommand {
     }
 
     private static Mono<Message> noModiconFound(MessageChannel channel, Mod mod, String link) {
-        return sendMessage(String.format("A modicon for **%s** does not exist at <%s>.", mod.getName(), link), channel);
+        return sendMessage(String.format("A modicon for **%s** does not exist at <%s>.", mod.name(), link), channel);
     }
 }

@@ -87,18 +87,18 @@ public class TilesheetRequestCommand extends AbstractCommand {
                 return sendMessage("**Error:** Could not detect footer on page. Please fix it -> <"
                         + WikiUtil.getBaseWikiPageUrl(context.wiki(), REQUESTS_PAGE) + '>', channel);
 
-            String header = "== " + mod.getName() + " ==";
+            String header = "== " + mod.name() + " ==";
             User user = event.getMessage().getAuthor().get();
             String talkMessage = String.format("Tilesheet Request for <code>%s</code> requested by %s. %s ~~~~",
-                    mod.getAbbrv(), MessageUtil.getUsernameDiscriminator(user), link);
+                    mod.abbrv(), MessageUtil.getUsernameDiscriminator(user), link);
 
             String newText = pageText.replace(matcher.group(), "\n\n" + header + '\n' + talkMessage + '\n' + FOOTER);
-            AReply reply = context.wiki().edit(REQUESTS_PAGE, newText, "Added tilesheet request for " + mod.getName());
+            AReply reply = context.wiki().edit(REQUESTS_PAGE, newText, "Added tilesheet request for " + mod.name());
 
             String message = MessageUtil.getMessageFromReply(reply, r -> {
-                Bot.LOGGER.info("Added tilesheet request for {}", mod.getName());
-                return "Added tilesheet request for **" + mod.getName() + "**.";
-            }, r -> "adding tilesheet request for " + mod.getName());
+                Bot.LOGGER.info("Added tilesheet request for {}", mod.name());
+                return "Added tilesheet request for **" + mod.name() + "**.";
+            }, r -> "adding tilesheet request for " + mod.name());
 
             return sendMessage(message, channel);
         });

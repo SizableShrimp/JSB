@@ -51,8 +51,8 @@ public class AddModCommand extends ConfirmationCommand<AddModCommand.Confirmatio
                         AReply reply = newMod.add();
                         String message = MessageUtil.getMessageFromReply(reply, r -> {
                             Bot.LOGGER.info("Added mod {} to mods list.", newMod);
-                            return String.format("Added **%s** (abbreviated as `%s`) to the mods list. Please mark for translation.", newMod.getName(), newMod.getAbbrv());
-                        }, r -> "adding mod " + newMod.getAbbrv());
+                            return String.format("Added **%s** (abbreviated as `%s`) to the mods list. Please mark for translation.", newMod.name(), newMod.abbrv());
+                        }, r -> "adding mod " + newMod.abbrv());
 
                         return event.getChannel().flatMap(channel -> sendMessage(message, channel));
                     } catch (IllegalStateException e) {
@@ -60,7 +60,7 @@ public class AddModCommand extends ConfirmationCommand<AddModCommand.Confirmatio
                     }
                 }, Reactions.X, (confirmation, event) -> event.getMessage().flatMap(Message::delete)
                         .then(event.getChannel().flatMap(channel -> sendMessage(String.format("Cancelling addition of mod named **%s** with abbreviation `%s`...",
-                                confirmation.newMod().getName(), confirmation.newMod().getAbbrv()), channel)))
+                                confirmation.newMod().name(), confirmation.newMod().abbrv()), channel)))
         ), List.of(Reactions.CHECKMARK, Reactions.X));
     }
 
@@ -108,18 +108,18 @@ public class AddModCommand extends ConfirmationCommand<AddModCommand.Confirmatio
             if (conflict != null) {
                 return sendMessage(
                         String.format("This mod abbreviation already exists as **%s** with abbreviation `%s`!",
-                                conflict.getName(), conflict.getAbbrv()),
+                                conflict.name(), conflict.abbrv()),
                         channel);
             } else {
                 Mono<Message> confirm;
                 if (newMod.hasDistinctLink()) {
                     confirm = sendMessage(String.format(
                             "Do you want to add a new mod to the list named **%s** with abbreviation `%s` and link `%s`?",
-                            newMod.getName(), newMod.getAbbrv(), newMod.getUrlLink()), channel);
+                            newMod.name(), newMod.abbrv(), newMod.getUrlLink()), channel);
                 } else {
                     confirm = sendMessage(String.format(
                             "Do you want to add a new mod to the list named **%s** with abbreviation `%s`?",
-                            newMod.getName(), newMod.getAbbrv()), channel);
+                            newMod.name(), newMod.abbrv()), channel);
                 }
                 return confirm.flatMap(m -> addReactions(m, new ConfirmationContext(context.wiki(), event.getMessage(), m, newMod)));
             }

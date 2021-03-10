@@ -25,6 +25,7 @@ package me.sizableshrimp.jsb.data;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import me.sizableshrimp.jsb.Bot;
+import me.sizableshrimp.jsb.util.CachedMap;
 import me.sizableshrimp.jsb.util.WikiUtil;
 import org.fastily.jwiki.core.AReply;
 import org.fastily.jwiki.core.Wiki;
@@ -33,6 +34,7 @@ import org.fastily.jwiki.util.GSONP;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -41,18 +43,26 @@ import java.util.regex.Pattern;
  * including mod abbreviation, unlocalized mod name in English, and link text.
  * <i>Note:</i> Each instance is tied to a specific {@link Wiki} object.
  */
-public final class Mod {
+public final record Mod(Wiki wiki, String abbrv, String name, String link) {
     /**
      * The page name of the mods list.
      */
     public static final String MODS_LIST = "Module:Mods/list";
     private static final Pattern NORMAL_ABBREVIATION = Pattern.compile("^[a-zA-Z][a-zA-Z0-9]*$");
-    private static final Map<Wiki, Map<String, Mod>> joinedData = new HashMap<>();
-    private static final Map<Wiki, TreeMap<String, Mod>> abbrvData = new HashMap<>();
-    private final Wiki wiki;
-    private final String abbrv;
-    private final String name;
-    private final String link;
+    private static final CachedMap<Wiki, ModData> CACHED_MOD_DATA = new CachedMap<>();
+    private static final Function<Wiki, ModData> RETRIEVE_FUNCTION = w -> {
+        // Order abbreviations with TreeMap for addition and removal purposes
+        TreeMap<String, Mod> byAbbrv = new TreeMap<>(getTableAsMap(w));
+
+        Map<String, Mod> joinedMods = new HashMap<>();
+        for (Map.Entry<String, Mod> entry : byAbbrv.entrySet()) {
+            Mod mod = entry.getValue();
+            logConflict(mod, joinedMods.put(mod.name().toLowerCase(), mod)); // Case insensitive mod name
+            logConflict(mod, joinedMods.put(entry.getKey().toLowerCase(), mod)); // Add abbreviation but lowercase
+        }
+
+        return new ModData(joinedMods, byAbbrv);
+    };
 
     public Mod(Wiki wiki, String abbrv, String name, String link) {
         this.wiki = wiki;
@@ -69,7 +79,7 @@ public final class Mod {
      */
     public String getLocalized(Language lang) {
         String langCode = lang == null ? "en" : lang.getCode();
-        JsonElement returnJson = Scribunto.runScribuntoCode(wiki, Mod.MODS_LIST + '/' + langCode, "p.byAbbrv['" + abbrv + "']").getReturnJson();
+        JsonElement returnJson = Scribunto.runScribuntoCode(this.wiki, MODS_LIST + '/' + langCode, "p.byAbbrv['" + this.abbrv + "']").getReturnJson();
         return returnJson == null ? null : GSONP.getStr(returnJson.getAsJsonObject(), "localized");
     }
 
@@ -80,20 +90,18 @@ public final class Mod {
      */
     public Mod getConflict() {
         // Reload the mods just in case it was already added recently
-        loadMods(this.wiki);
-        Map<String, Mod> joined = joinedData.get(this.wiki);
+        ModData modData = loadMods(this.wiki, true);
+        Map<String, Mod> joinedMods = modData.joinedMods();
 
-        Mod existing;
-        if ((existing = joined.get(this.name.toLowerCase())) != null || (existing = joined.get(this.abbrv.toLowerCase())) != null) {
+        Mod existing = joinedMods.get(this.name.toLowerCase());
+        if (existing != null)
             return existing;
-        }
 
-        return null;
+        return joinedMods.get(this.abbrv.toLowerCase());
     }
 
     /**
-     * Adds this {@link Mod} instance to the mods list, if it does not already
-     * exist.
+     * Adds this {@link Mod} instance to the mods list, if it does not already exist.
      *
      * @return the {@link AReply} corresponding to the response from the server.
      * @throws IllegalStateException if the mod already exists in the mods list.
@@ -103,9 +111,10 @@ public final class Mod {
         if (conflict != null)
             throw new IllegalStateException(this.toString() + " already exists in mods list.");
 
-        TreeMap<String, Mod> byAbbrv = abbrvData.get(this.wiki);
-        Map.Entry<String, Mod> lowerEntry = byAbbrv.lowerEntry(this.abbrv);
-        Map.Entry<String, Mod> higherEntry = byAbbrv.higherEntry(this.abbrv);
+        // Mod#getConflict already forcefully retrieves the mod data
+        ModData modData = loadMods(wiki, false);
+        Map.Entry<String, Mod> lowerEntry = modData.byAbbrv().lowerEntry(this.abbrv);
+        Map.Entry<String, Mod> higherEntry = modData.byAbbrv().higherEntry(this.abbrv);
 
         String rawText = this.wiki.getPageText(MODS_LIST);
         String[] lines = rawText.split("\n");
@@ -147,9 +156,9 @@ public final class Mod {
         AReply reply = this.wiki.edit(MODS_LIST, newText, "Added " + this.abbrv + '=' + this.name);
 
         if (reply.isSuccess()) {
-            joinedData.get(this.wiki).put(this.name.toLowerCase(), this);
-            joinedData.get(this.wiki).put(this.abbrv.toLowerCase(), this);
-            abbrvData.get(this.wiki).put(this.abbrv.toUpperCase(), this);
+            modData.joinedMods().put(this.name.toLowerCase(), this);
+            modData.joinedMods().put(this.abbrv.toLowerCase(), this);
+            modData.byAbbrv().put(this.abbrv.toUpperCase(), this);
         }
 
         return reply;
@@ -163,9 +172,9 @@ public final class Mod {
      */
     public AReply remove() {
         // Reload the mods just in case it was added recently
-        loadMods(this.wiki);
-        if (abbrvData.get(this.wiki).get(this.abbrv) == null)
-            throw new IllegalStateException(this.toString() + " does not exist in mods list."); // Doesn't exist
+        ModData modData = loadMods(this.wiki, true);
+        if (modData.byAbbrv().get(this.abbrv) == null)
+            throw new IllegalStateException(this + " does not exist in mods list."); // Doesn't exist
 
         String rawText = this.wiki.getPageText(MODS_LIST);
         String[] lines = rawText.split("\n");
@@ -194,68 +203,53 @@ public final class Mod {
         AReply reply = this.wiki.edit(MODS_LIST, newText, "Removed " + this.abbrv + '=' + this.name);
 
         if (reply.isSuccess()) {
-            joinedData.get(this.wiki).remove(this.name.toLowerCase());
-            joinedData.get(this.wiki).remove(this.abbrv.toLowerCase());
-            abbrvData.get(this.wiki).remove(this.abbrv.toUpperCase());
+            modData.joinedMods().remove(this.name.toLowerCase());
+            modData.joinedMods().remove(this.abbrv.toLowerCase());
+            modData.byAbbrv().remove(this.abbrv.toUpperCase());
         }
 
         return reply;
     }
 
     /**
-     * Get a {@link Mod} by its unlocalized mod name or abbreviation, e.g. "Crop
-     * Dusting" or "CD". This method also converts all names to lowercase since no
-     * names should conflict anyways. This method will return null if the JSON from
-     * Scribunto Console API is null OR if the mod does not exist.
+     * Get a {@link Mod} by its unlocalized mod name or abbreviation, e.g. "Crop Dusting" or "CD". This method also converts all names to lowercase since no names should conflict anyways. This method
+     * will return null if the JSON from Scribunto Console API is null OR if the mod does not exist.
      *
      * @param wiki A {@link Wiki} object to use for requesting the data.
      * @param modInfo The unlocalized mod name or abbreviation, case insensitive.
      * @return A {@link Mod} object, or null.
      */
     public static Mod getByInfo(Wiki wiki, String modInfo) {
-        Map<String, Mod> joinedMods = joinedData.get(wiki);
-        if (joinedMods == null)
-            joinedMods = loadMods(wiki);
-
-        return joinedMods.get(modInfo.toLowerCase());
+        ModData modData = loadMods(wiki, false);
+        return modData.joinedMods().get(modInfo.toLowerCase());
     }
 
     /**
-     * Get a {@link Mod} by its abbreviation, e.g. "CD". This method also converts
-     * all abbreviations to uppercase. This method will return null if the JSON from
-     * Scribunto Console API is null OR if the mod does not exist.
+     * Get a {@link Mod} by its abbreviation, e.g. "CD". This method also converts all abbreviations to uppercase. This method will return null if the JSON from Scribunto Console API is null OR if the
+     * mod does not exist.
      *
      * @param wiki A {@link Wiki} object to use for requesting the data.
      * @param modAbbrv The mod abbreviation, case insensitive.
      * @return A {@link Mod} object, or null.
      */
     public static Mod getByAbbreviation(Wiki wiki, String modAbbrv) {
-        Map<String, Mod> byAbbrv = abbrvData.get(wiki);
-        if (byAbbrv == null) {
-            loadMods(wiki);
-            byAbbrv = abbrvData.get(wiki);
-        }
-
-        return byAbbrv.get(modAbbrv.toUpperCase());
+        ModData modData = loadMods(wiki, false);
+        return modData.byAbbrv().get(modAbbrv.toUpperCase());
     }
 
-    private static Map<String, Mod> loadMods(Wiki wiki) {
-        Map<String, Mod> byAbbrv = getTableAsMap(wiki);
-
-        // Order abbreviations for addition and removal purposes
-        abbrvData.put(wiki, new TreeMap<>(byAbbrv));
-
-        Map<String, Mod> updated = new HashMap<>();
-        for (Map.Entry<String, Mod> entry : byAbbrv.entrySet()) {
-            Mod mod = entry.getValue();
-            Mod prev = updated.put(mod.getName().toLowerCase(), mod); // Case insensitive mod name
-            logConflict(mod, prev);
-            prev = updated.put(entry.getKey().toLowerCase(), mod); // Add abbreviation but lowercase
-            logConflict(mod, prev);
+    /**
+     * Load the mods.
+     *
+     * @param wiki The {@link Wiki} object to use for requesting the data.
+     * @param retrieve If true, always retrieve the data. Otherwise, use cached data if it exists.
+     * @return The mod data.
+     */
+    private static ModData loadMods(Wiki wiki, boolean retrieve) {
+        if (retrieve) {
+            return CACHED_MOD_DATA.retrieve(wiki, RETRIEVE_FUNCTION);
+        } else {
+            return CACHED_MOD_DATA.getOrRetrieve(wiki, RETRIEVE_FUNCTION);
         }
-
-        joinedData.put(wiki, updated);
-        return updated;
     }
 
     private static void logConflict(Mod mod, Mod prev) {
@@ -284,30 +278,17 @@ public final class Mod {
         return map;
     }
 
-    public Wiki getWiki() {
-        return this.wiki;
-    }
-
-    public String getAbbrv() {
-        return this.abbrv;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
     /**
      * Get the page name of the mod. In almost all cases, this is equal to the unlocalized name.
      *
      * @return The page name of the mod, named "link" in the mods list.
      */
-    public String getLink() {
+    public String link() {
         return this.link;
     }
 
     /**
-     * Returns true if this mod's page link is different from its unlocalized name.
-     * In almost all cases, this is false.
+     * Returns true if this mod's page link is different from its unlocalized name. In almost all cases, this is false.
      *
      * @return true if this mod's page link is different from its unlocalized name.
      */
@@ -316,39 +297,12 @@ public final class Mod {
     }
 
     /**
-     * Returns the full path to the mod's page based on the current {@link Config#getApi()}.
+     * Returns the full path to the mod's page based on the current {@link Wiki}.
      *
-     * @return the full path to the mod's page based on the current {@link Config#getApi()}.
+     * @return the full path to the mod's page based on the current {@link Wiki}.
      */
     public String getUrlLink() {
         return WikiUtil.getBaseWikiPageUrl(this.wiki, this.link);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        Mod mod = (Mod) o;
-
-        if (!wiki.equals(mod.wiki))
-            return false;
-        if (!abbrv.equals(mod.abbrv))
-            return false;
-        if (!name.equals(mod.name))
-            return false;
-        return link.equals(mod.link);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = wiki.hashCode();
-        result = 31 * result + abbrv.hashCode();
-        result = 31 * result + name.hashCode();
-        result = 31 * result + link.hashCode();
-        return result;
     }
 
     @Override
@@ -359,4 +313,6 @@ public final class Mod {
                 ", link='" + link + '\'' +
                 '}';
     }
+
+    private record ModData(Map<String, Mod> joinedMods, TreeMap<String, Mod> byAbbrv) {}
 }
