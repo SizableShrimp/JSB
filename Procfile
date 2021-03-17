@@ -1,1 +1,1 @@
-worker: java $JAVA_OPTS --enable-preview -jar build/libs/DiscordBot.jar
+worker: java $JAVA_OPTS -jar build/libs/DiscordBot.jar

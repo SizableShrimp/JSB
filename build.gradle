@@ -4,9 +4,7 @@ plugins {
 }
 
 group = 'me.sizableshrimp.jsb'
-version = '0.2.0'
-
-sourceCompatibility = targetCompatibility = '15'
+version = '0.2.1'
 
 repositories {
     mavenCentral()
@@ -25,7 +23,7 @@ dependencies {
     // Useful Libraries
     // implementation 'org.jsoup:jsoup:1.13.1'
     implementation 'org.imgscalr:imgscalr-lib:4.2'
-    implementation 'org.springframework.boot:spring-boot-starter:2.3.3.RELEASE'
+    implementation 'org.springframework.boot:spring-boot-starter:2.4.3'
     implementation 'org.reflections:reflections:0.9.12'
     // compileOnly 'org.projectlombok:lombok:1.18.16'
 }
@@ -38,12 +36,14 @@ tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-tasks.withType(JavaCompile).each {
-    it.options.compilerArgs.add('--enable-preview')
-}
-
 jar {
     manifest {
         attributes('Main-Class': 'me.sizableshrimp.jsb.Bot')
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(16)
     }
 }
