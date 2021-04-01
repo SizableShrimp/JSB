@@ -22,6 +22,9 @@
 
 package me.sizableshrimp.jsb.commands.utility.info;
 
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.TreeMultimap;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
@@ -33,13 +36,15 @@ import me.sizableshrimp.jsb.api.CommandInfo;
 import me.sizableshrimp.jsb.args.Args;
 import me.sizableshrimp.jsb.args.ArgsProcessor;
 import me.sizableshrimp.jsb.commands.AbstractCommand;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 public class HelpCommand extends AbstractCommand {
+    private static final Pattern NAME_PATTERN = Pattern.compile("([^A-Z])([A-Z][^A-Z])");
+
     @Override
     public CommandInfo getInfo(CommandContext context) {
         return new CommandInfo(this, "%cmdname% [command]", "Use `%prefix%help [command]` to find out more information about each command.");
@@ -74,9 +79,8 @@ public class HelpCommand extends AbstractCommand {
     }
 
     public static Consumer<EmbedCreateSpec> display(String inputCmd, Command command, CommandContext context) {
-        String commandName = command.getClass().getSimpleName()
-                .replace("Command", "")
-                .replaceAll("([^A-Z])([A-Z][^A-Z])", "$1 $2")
+        String commandName = NAME_PATTERN.matcher(command.getClass().getSimpleName().replace("Command", ""))
+                .replaceAll("$1 $2")
                 .trim();
         CommandInfo commandInfo = command.getInfo(context);
 
@@ -99,13 +103,18 @@ public class HelpCommand extends AbstractCommand {
     }
 
     private Mono<Message> displayHelp(CommandContext context, MessageCreateEvent event) {
-        List<String> names = context.commandManager().getCommands().stream()
-                .map(Command::getName)
-                .sorted()
-                .collect(Collectors.toList());
+        Multimap<String, String> commandMap = context.commandManager().getCommands().stream()
+                .collect(Multimaps.toMultimap(c -> {
+                    String packageName = c.getClass().getPackageName();
+                    return StringUtils.capitalize(packageName.substring(packageName.lastIndexOf('.') + 1));
+                }, Command::getName, TreeMultimap::create));
 
-        Consumer<EmbedCreateSpec> spec = display("help", this, context)
-                .andThen(embed -> embed.addField("Commands", String.join(", ", names), false));
-        return event.getMessage().getChannel().flatMap(c -> sendEmbed(spec, c));
+        Consumer<EmbedCreateSpec> spec = display("help", this, context);
+        for (var entry : commandMap.asMap().entrySet()) {
+            spec = spec.andThen(embed -> embed.addField(entry.getKey() + " Commands", String.join(", ", entry.getValue()), false));
+        }
+
+        Consumer<EmbedCreateSpec> finalSpec = spec;
+        return event.getMessage().getChannel().flatMap(c -> sendEmbed(finalSpec, c));
     }
 }

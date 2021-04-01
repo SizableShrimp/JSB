@@ -23,6 +23,7 @@ dependencies {
     // Useful Libraries
     // implementation 'org.jsoup:jsoup:1.13.1'
     implementation 'org.imgscalr:imgscalr-lib:4.2'
+    implementation 'com.google.guava:guava:30.1.1-jre'
     implementation 'org.springframework.boot:spring-boot-starter:2.4.3'
     implementation 'org.reflections:reflections:0.9.12'
     // compileOnly 'org.projectlombok:lombok:1.18.16'
