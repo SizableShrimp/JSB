@@ -33,7 +33,7 @@ import reactor.core.publisher.Mono;
 public class FuckCommand extends AbstractCommand {
     @Override
     public CommandInfo getInfo(CommandContext context) {
-        return new CommandInfo(this, "%cmdname%", "Use it and find out. New and improved!");
+        return new CommandInfo(this, "%cmdname%", "Use it and find out");
     }
 
     @Override
@@ -43,6 +43,6 @@ public class FuckCommand extends AbstractCommand {
 
     @Override
     public Mono<Message> run(CommandContext context, MessageCreateEvent event, Args args) {
-        return event.getMessage().getChannel().flatMap(channel -> sendMessage("Java", channel));
+        return event.getMessage().getChannel().flatMap(channel -> sendMessage("You", channel));
     }
 }
