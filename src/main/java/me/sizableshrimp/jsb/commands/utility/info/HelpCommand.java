@@ -51,6 +51,11 @@ public class HelpCommand extends AbstractCommand {
     }
 
     @Override
+    public Set<String> getAliases() {
+        return Set.of("h");
+    }
+
+    @Override
     public String getName() {
         return "help";
     }
